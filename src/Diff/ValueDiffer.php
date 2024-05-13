@@ -1,6 +1,6 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator;
+namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
 final class ValueDiffer implements DifferInterface
 {

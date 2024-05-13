@@ -1,6 +1,6 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator;
+namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
 use function array_diff_key;
 use function array_keys;

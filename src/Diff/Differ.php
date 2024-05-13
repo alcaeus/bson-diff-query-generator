@@ -1,6 +1,6 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator;
+namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
 use function is_array;
 

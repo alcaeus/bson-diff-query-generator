@@ -1,13 +1,13 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator\Tests;
+namespace Alcaeus\BsonDiffQueryGenerator\Tests\Diff;
 
-use Alcaeus\BsonDiffQueryGenerator\ArrayDiff;
-use Alcaeus\BsonDiffQueryGenerator\ArrayDiffer;
-use Alcaeus\BsonDiffQueryGenerator\Differ;
-use Alcaeus\BsonDiffQueryGenerator\EmptyDiff;
-use Alcaeus\BsonDiffQueryGenerator\ValueDiff;
-use Alcaeus\BsonDiffQueryGenerator\ValueDiffer;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiff;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiffer;
+use Alcaeus\BsonDiffQueryGenerator\Diff\Differ;
+use Alcaeus\BsonDiffQueryGenerator\Diff\EmptyDiff;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiffer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
