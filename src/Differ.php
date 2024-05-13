@@ -12,6 +12,10 @@ final class Differ implements DifferInterface
             return (new ArrayDiffer())->getDiff($old, $new);
         }
 
+        if (is_object($new) && is_object($old)) {
+            return (new ObjectDiffer())->getDiff($old, $new);
+        }
+
         return (new ValueDiffer())->getDiff($old, $new);
     }
 }
