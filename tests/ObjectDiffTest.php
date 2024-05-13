@@ -1,5 +1,7 @@
 <?php
 
+namespace Alcaeus\BsonDiffQueryGenerator\Tests;
+
 use Alcaeus\BsonDiffQueryGenerator\ObjectDiff;
 use Alcaeus\BsonDiffQueryGenerator\EmptyDiff;
 use PHPUnit\Framework\Attributes\CoversClass;

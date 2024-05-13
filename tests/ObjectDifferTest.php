@@ -1,5 +1,6 @@
 <?php
 
+namespace Alcaeus\BsonDiffQueryGenerator\Tests;
 
 use Alcaeus\BsonDiffQueryGenerator\ArrayDiff;
 use Alcaeus\BsonDiffQueryGenerator\ArrayDiffer;

@@ -1,5 +1,7 @@
 <?php
 
+namespace Alcaeus\BsonDiffQueryGenerator\Tests;
+
 use Alcaeus\BsonDiffQueryGenerator\ArrayDiff;
 use Alcaeus\BsonDiffQueryGenerator\ArrayDiffer;
 use Alcaeus\BsonDiffQueryGenerator\Differ;
@@ -8,6 +10,7 @@ use Alcaeus\BsonDiffQueryGenerator\ObjectDiff;
 use Alcaeus\BsonDiffQueryGenerator\ObjectDiffer;
 use Alcaeus\BsonDiffQueryGenerator\ValueDiff;
 use Alcaeus\BsonDiffQueryGenerator\ValueDiffer;
+use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
