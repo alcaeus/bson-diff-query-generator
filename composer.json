@@ -1,20 +1,21 @@
 {
     "name": "alcaeus/bson-diff-query-generator",
     "type": "library",
-    "require": {
-        "php": "^8.1"
-    },
     "license": "MIT",
+    "authors": [
+        { "name": "Andreas Braun", "email": "git@alcaeus.org" }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "^8.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.2@dev",
+        "vimeo/psalm": "^6.0@dev"
+    },
     "autoload": {
         "psr-4": {
             "Alcaeus\\BsonDiffQueryGenerator\\": "src/"
         }
-    },
-    "authors": [
-        {
-            "name": "Andreas Braun",
-            "email": "git@alcaeus.org"
-        }
-    ],
-    "minimum-stability": "dev"
+    }
 }
