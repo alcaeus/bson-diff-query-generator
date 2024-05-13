@@ -5,9 +5,9 @@ namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 final readonly class ObjectDiff implements Diff
 {
     /**
-     * @param array<array-key, mixed> $addedValues
-     * @param array<array-key, Diff> $changedValues
-     * @param list<array-key> $removedFields
+     * @param array<string, mixed> $addedValues
+     * @param array<string, Diff> $changedValues
+     * @param list<string> $removedFields
      */
     public function __construct(
         public array $addedValues = [],
@@ -16,9 +16,9 @@ final readonly class ObjectDiff implements Diff
     ) {}
 
     /**
-     * @param array<array-key, mixed> $addedValues
-     * @param array<array-key, Diff> $changedValues
-     * @param list<array-key> $removedFields
+     * @param array<string, mixed> $addedValues
+     * @param array<string, Diff> $changedValues
+     * @param list<string> $removedFields
      */
     public function with(
         ?array $addedValues = null,
