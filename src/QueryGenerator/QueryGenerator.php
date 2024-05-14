@@ -2,49 +2,159 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\QueryGenerator;
 
+use Alcaeus\BsonDiffQueryGenerator\Diff\Diff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
-use function array_combine;
-use function array_fill;
+use MongoDB\Builder\Expression;
+use MongoDB\Builder\Pipeline;
+use MongoDB\Builder\Stage;
+use MongoDB\Builder\Stage\SetStage;
+use MongoDB\Builder\Type\StageInterface;
+use function array_keys;
+use function array_map;
+use function array_reduce;
+use function array_values;
+use function rsort;
 
 final class QueryGenerator
 {
+    public function generateUpdatePipeline(ObjectDiff $objectDiff): Pipeline
+    {
+        $query = $this->generateQueryObject($objectDiff);
+
+        /** @var list<StageInterface|Pipeline> $stages */
+        $stages = [];
+
+        if ($query->lists !== []) {
+            $sortedLists = $query->lists;
+            sort($sortedLists);
+
+            $stages = array_merge(
+                $stages,
+                array_map(
+                    $this->convertListToObject(...),
+                    $sortedLists,
+                ),
+            );
+        }
+
+        if ($query->set !== []) {
+            $stages[] = Stage::set(...$query->set);
+        }
+
+        if ($query->unset !== []) {
+            $stages[] = Stage::unset(...$query->unset);
+        }
+
+        if ($query->lists !== []) {
+            $stages = array_merge(
+                $stages,
+                $this->pushNewElementsAndConvertList($query),
+            );
+        }
+
+        return new Pipeline(...$stages);
+    }
+
+    // TODO: make private
     public function generateQueryObject(ObjectDiff $objectDiff): Query
     {
         $query = new Query(
             $objectDiff->addedValues,
-            array_combine(
-                $objectDiff->removedFields,
-                array_fill(0, count($objectDiff->removedFields), true),
-            ),
+            $objectDiff->removedFields,
         );
 
-        /** @var array<string, mixed> $set */
-        $set = [];
-        foreach ($objectDiff->changedValues as $key => $diff) {
-            // ValueDiff always uses `$set` to replace the original value
-            if ($diff instanceof ValueDiff) {
-                $set[$key] = $diff->value;
-                continue;
-            }
+        return array_reduce(
+            array_keys($objectDiff->changedValues),
+            fn (Query $query, string $key) => $this->updateQueryForDiff(
+                $key,
+                $objectDiff->changedValues[$key],
+                $query,
+            ),
+            $query,
+        );
+    }
 
-            // For objects, merge our query with that of the nested object, prefixing with the current key
-            if ($diff instanceof ObjectDiff) {
-                $query = $query->combineWithPrefixedQuery(
-                    $this->generateQueryObject($diff),
-                    $key,
-                );
+    private function updateQueryForDiff(string $key, Diff $diff, Query $query): Query
+    {
+        return match ($diff::class) {
+            // Simple value: add to $set operator
+            ValueDiff::class => $query->combineWith(set: [$key => $diff->value]),
 
-                continue;
-            }
+            // Object diff: apply with a prefix
+            ObjectDiff::class => $query->combineWithPrefixedQuery(
+                $this->generateQueryObject($diff),
+                $key,
+            ),
 
-            // Arrays need special handling. An array could map to an object, or it could represent a list
-            if ($diff instanceof ListDiff) {
-                // TODO: Array diff
-            }
-        }
+            ListDiff::class => $query->combineWithPrefixedQuery(
+                $this->generateListQueryObject($diff),
+                $key,
+                isList: true,
+            ),
+        };
+    }
 
-        return $query->combineWith(set: $set);
+    public function generateListQueryObject(ListDiff $listDiff): Query
+    {
+        $query = new Query(
+            unset: $listDiff->removedKeys,
+            push: ['' => array_values($listDiff->addedValues)],
+        );
+
+        return array_reduce(
+            array_keys($listDiff->changedValues),
+            fn (Query $query, int|string $index) => $this->updateQueryForDiff(
+                (string) $index,
+                $listDiff->changedValues[$index],
+                $query,
+            ),
+            $query,
+        );
+    }
+
+    private function convertListToObject(string $key): SetStage
+    {
+        return Stage::set(...[$key => PipelineGenerator::listToObject(Expression::arrayFieldPath($key))]);
+    }
+
+    private function convertObjectToList(string $key): SetStage
+    {
+        return Stage::set(...[$key => PipelineGenerator::objectToList(Expression::objectFieldPath($key))]);
+    }
+
+    private function pushNewListElements(string $key, array $elements): SetStage
+    {
+        return Stage::set(
+            ...[$key => Expression::concatArrays(
+                Expression::arrayFieldPath($key),
+                $elements,
+            )],
+        );
+    }
+
+    /** @return list<SetStage|Pipeline> */
+    private function pushNewElementsAndConvertList(Query $query): array
+    {
+        $lists = $query->lists;
+
+        // Sort in reverse order - this will generally ensure that nested lists are handled first
+        rsort($lists);
+
+        return array_map(
+            function (string $list) use ($query): Pipeline|SetStage
+            {
+                if ($query->push[$list] !== []) {
+                    return new Pipeline(
+                        $this->convertObjectToList($list),
+                        $this->pushNewListElements($list, $query->push[$list]),
+                    );
+                }
+
+                return $this->convertObjectToList($list);
+            },
+            $lists,
+        );
     }
 }
