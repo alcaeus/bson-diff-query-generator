@@ -3,17 +3,27 @@
 namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
 use function array_diff_key;
+use function array_is_list;
 use function array_keys;
 
 class ArrayDiffer implements DifferInterface
 {
-    public function getDiff(?array $old, ?array $new): Diff
+    public function getDiff(?array $old, ?array $new): EmptyDiff|ValueDiff|ListDiff|ObjectDiff
     {
         if ($old === $new) {
             return new EmptyDiff();
         }
 
         if ($old === null || $new === null) {
+            return new ValueDiff($new);
+        }
+
+        $oldIsList = array_is_list($old);
+        $newCouldBeList = $this->couldBeList($new);
+
+        if ($oldIsList xor $newCouldBeList) {
+            // If an array changed from a list to a non-list (or vice-versa), overwrite the value as the BSON type would
+            // change
             return new ValueDiff($new);
         }
 
@@ -34,11 +44,41 @@ class ArrayDiffer implements DifferInterface
         // TODO: consider checking values in added and removed keys to determine
         // renamed keys
 
-        return new ArrayDiff(
-            addedValues: $addedValues,
-            changedValues: $changedValues,
-            removedKeys: array_keys($removedKeys),
+        $className = $newCouldBeList ? ListDiff::class : ObjectDiff::class;
+
+        return new $className(
+            $addedValues,
+            $changedValues,
+            array_keys($removedKeys),
         );
+    }
+
+    /**
+     * Returns whether a given array with arbitrary keys could be a list
+     *
+     * A list (packed array in PHP) is a special array with sequential integer keys starting with 0.
+     * For an array to be a potential list, we require:
+     * - All keys MUST be integers
+     * - Keys MUST be in order; plugging gaps is not allowed
+     *
+     * @param array<array-key, mixed> $array
+     */
+    private function couldBeList(array $array): bool
+    {
+        $previousKey = null;
+        foreach ($array as $key => $_) {
+            if (!is_int($key)) {
+                return false;
+            }
+
+            if ($previousKey !== null && $previousKey > $key) {
+                return false;
+            }
+
+            $previousKey = $key;
+        }
+
+        return true;
     }
 
     /** @return array<array-key> */

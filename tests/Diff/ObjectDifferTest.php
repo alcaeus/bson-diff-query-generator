@@ -2,7 +2,7 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Tests\Diff;
 
-use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiff;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiffer;
 use Alcaeus\BsonDiffQueryGenerator\Diff\Differ;
 use Alcaeus\BsonDiffQueryGenerator\Diff\EmptyDiff;
@@ -15,7 +15,6 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ObjectDiffer::class)]
-#[UsesClass(ArrayDiff::class)]
 #[UsesClass(ArrayDiffer::class)]
 #[UsesClass(Differ::class)]
 #[UsesClass(EmptyDiff::class)]

@@ -2,7 +2,7 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
-final readonly class ArrayDiff implements Diff
+final readonly class ListDiff implements Diff
 {
     /**
      * @param array<array-key, mixed> $addedValues

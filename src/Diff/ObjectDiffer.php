@@ -17,16 +17,7 @@ class ObjectDiffer implements DifferInterface
             return new ValueDiff($new);
         }
 
-        $diff = $this->arrayDiffer->getDiff((array) $old, (array) $new);
-
-        if (!$diff instanceof ArrayDiff) {
-            return $diff;
-        }
-
-        return new ObjectDiff(
-            addedValues: $diff->addedValues,
-            changedValues: $diff->changedValues,
-            removedFields: $diff->removedKeys,
-        );
+        // TODO: This will convert any object with sequential numeric 0-based keys to a list
+        return $this->arrayDiffer->getDiff((array) $old, (array) $new);
     }
 }

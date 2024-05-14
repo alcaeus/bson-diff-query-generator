@@ -2,7 +2,7 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Tests\Diff;
 
-use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiff;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiffer;
 use Alcaeus\BsonDiffQueryGenerator\Diff\Differ;
 use Alcaeus\BsonDiffQueryGenerator\Diff\EmptyDiff;
@@ -18,8 +18,8 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Differ::class)]
 #[CoversClass(EmptyDiff::class)]
-#[UsesClass(ArrayDiff::class)]
 #[UsesClass(ArrayDiffer::class)]
+#[UsesClass(ListDiff::class)]
 #[UsesClass(ValueDiff::class)]
 #[UsesClass(ValueDiffer::class)]
 #[UsesClass(ObjectDiff::class)]
@@ -52,10 +52,18 @@ class DifferTest extends TestCase
         yield 'Old object, new scalar' => [new ValueDiff('bar'), (object) ['foo' => 'bar'], 'bar'];
     }
 
-    public function testValueDifferWithArray(): void
+    public function testValueDifferWithList(): void
     {
         self::assertInstanceOf(
-            ArrayDiff::class,
+            ListDiff::class,
+            (new Differ())->getDiff([1, 2, 3], [1, 2]),
+        );
+    }
+
+    public function testValueDifferWithStruct(): void
+    {
+        self::assertInstanceOf(
+            ObjectDiff::class,
             (new Differ())->getDiff(['foo' => 'bar'], ['bar' => 'baz']),
         );
     }
