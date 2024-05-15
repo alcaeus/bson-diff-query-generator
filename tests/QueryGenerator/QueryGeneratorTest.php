@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ObjectDiff::class)]
 #[UsesClass(ValueDiff::class)]
 #[UsesClass(ValueDiffer::class)]
-class QueryGeneratorTest extends TestCase
+final class QueryGeneratorTest extends TestCase
 {
     public function testSimpleObject(): void
     {

@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ListDiff::class)]
 #[UsesClass(EmptyDiff::class)]
-class ListDiffTest extends TestCase
+final class ListDiffTest extends TestCase
 {
     public function testInitialValues(): void
     {

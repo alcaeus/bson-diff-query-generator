@@ -2,6 +2,6 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
-class EmptyDiff implements Diff
+final class EmptyDiff implements Diff
 {
 }

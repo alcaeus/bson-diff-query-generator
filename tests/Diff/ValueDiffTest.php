@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ValueDiff::class)]
-class ValueDiffTest extends TestCase
+final class ValueDiffTest extends TestCase
 {
     public function testStoresValue(): void
     {

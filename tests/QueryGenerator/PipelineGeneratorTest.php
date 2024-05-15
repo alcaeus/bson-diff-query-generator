@@ -14,7 +14,7 @@ use function array_shift;
 use function iterator_to_array;
 
 #[CoversClass(PipelineGenerator::class)]
-class PipelineGeneratorTest extends FunctionalTestCase
+final class PipelineGeneratorTest extends FunctionalTestCase
 {
     private const TYPEMAP = ['root' => 'array', 'array' => 'array', 'document' => 'object'];
 

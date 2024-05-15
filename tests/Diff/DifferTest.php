@@ -24,7 +24,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ValueDiffer::class)]
 #[UsesClass(ObjectDiff::class)]
 #[UsesClass(ObjectDiffer::class)]
-class DifferTest extends TestCase
+final class DifferTest extends TestCase
 {
     #[DataProvider('provideDifferTests')]
     public function testValueDiffer($expected, $old, $new): void

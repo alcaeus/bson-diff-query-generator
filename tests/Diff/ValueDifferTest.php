@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ValueDiffer::class)]
 #[UsesClass(ValueDiff::class)]
-class ValueDifferTest extends TestCase
+final class ValueDifferTest extends TestCase
 {
     #[DataProvider('provideDifferTests')]
     public function testValueDiffer($expected, $old, $new): void

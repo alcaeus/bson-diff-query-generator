@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use function getenv;
 
-class FunctionalTestCase extends TestCase
+abstract class FunctionalTestCase extends TestCase
 {
     private ?Client $client = null;
 

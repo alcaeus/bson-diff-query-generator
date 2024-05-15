@@ -5,7 +5,7 @@ namespace Alcaeus\BsonDiffQueryGenerator\QueryGenerator;
 use MongoDB\Builder\Expression;
 use function MongoDB\object;
 
-class PipelineGenerator
+final class PipelineGenerator
 {
     /**
      * Generates an expression to turn the given array into an object.

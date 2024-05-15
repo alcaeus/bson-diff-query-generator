@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ObjectDiff::class)]
 #[UsesClass(ValueDiff::class)]
 #[UsesClass(ValueDiffer::class)]
-class ObjectDifferTest extends TestCase
+final class ObjectDifferTest extends TestCase
 {
     public function testWithSameObjectValue(): void
     {

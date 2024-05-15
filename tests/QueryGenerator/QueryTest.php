@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Query::class)]
-class QueryTest extends TestCase
+final class QueryTest extends TestCase
 {
     public function testStoresValues(): void
     {

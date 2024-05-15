@@ -20,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ObjectDiff::class)]
 #[UsesClass(ValueDiff::class)]
 #[UsesClass(ValueDiffer::class)]
-class ArrayDifferTest extends TestCase
+final class ArrayDifferTest extends TestCase
 {
     public function testWithSameList(): void
     {

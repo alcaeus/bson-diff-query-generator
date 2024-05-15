@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ObjectDiff::class)]
 #[UsesClass(EmptyDiff::class)]
-class ObjectDiffTest extends TestCase
+final class ObjectDiffTest extends TestCase
 {
     public function testInitialValues(): void
     {

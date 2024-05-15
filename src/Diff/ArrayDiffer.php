@@ -6,7 +6,7 @@ use function array_diff_key;
 use function array_is_list;
 use function array_keys;
 
-class ArrayDiffer implements DifferInterface
+final class ArrayDiffer implements DifferInterface
 {
     public function getDiff(?array $old, ?array $new): EmptyDiff|ValueDiff|ListDiff|ObjectDiff
     {
