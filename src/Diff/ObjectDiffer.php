@@ -2,6 +2,7 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
+/** @internal */
 final class ObjectDiffer implements DifferInterface
 {
     private ArrayDiffer $arrayDiffer;

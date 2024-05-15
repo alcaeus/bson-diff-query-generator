@@ -2,6 +2,7 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
+/** @internal */
 final readonly class ObjectDiff implements Diff
 {
     /**

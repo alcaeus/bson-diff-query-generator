@@ -5,6 +5,7 @@ namespace Alcaeus\BsonDiffQueryGenerator\QueryGenerator;
 use MongoDB\Builder\Expression;
 use function MongoDB\object;
 
+/** @internal */
 final class PipelineGenerator
 {
     /**

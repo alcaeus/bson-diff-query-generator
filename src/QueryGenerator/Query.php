@@ -9,6 +9,7 @@ use function array_merge;
 use function array_values;
 use function sprintf;
 
+/** @internal */
 final readonly class Query
 {
     /** @var list<string> */

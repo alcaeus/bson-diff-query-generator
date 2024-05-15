@@ -4,6 +4,7 @@ namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
 use function is_array;
 
+/** @internal */
 final class Differ implements DifferInterface
 {
     public function getDiff(mixed $old, mixed $new): Diff
