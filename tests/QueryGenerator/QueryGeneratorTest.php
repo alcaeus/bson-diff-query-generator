@@ -9,11 +9,10 @@ use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiffer;
-use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\PipelineGenerator;
+use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\Expression;
 use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\Query;
 use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\QueryGenerator;
-use MongoDB\Builder\BuilderEncoder;
-use MongoDB\Builder\Expression;
+use MongoDB\Builder\Expression as BaseExpression;
 use MongoDB\Builder\Pipeline;
 use MongoDB\Builder\Stage;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -24,7 +23,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ArrayDiffer::class)]
 #[UsesClass(Differ::class)]
 #[UsesClass(ListDiff::class)]
-#[UsesClass(PipelineGenerator::class)]
+#[UsesClass(Expression::class)]
 #[UsesClass(Query::class)]
 #[UsesClass(ObjectDiff::class)]
 #[UsesClass(ValueDiff::class)]
@@ -96,10 +95,10 @@ final class QueryGeneratorTest extends TestCase
 
         self::assertEquals(
             new Pipeline(
-                Stage::set(list: PipelineGenerator::listToObject(Expression::arrayFieldPath('list'))),
+                Stage::set(list: Expression::listToObject(BaseExpression::arrayFieldPath('list'))),
                 Stage::unset('list.0', 'list.3', 'list.5'),
-                Stage::set(list: PipelineGenerator::objectToList(Expression::objectFieldPath('list'))),
-                Stage::set(list: Expression::concatArrays(Expression::arrayFieldPath('list'), [6])),
+                Stage::set(list: Expression::objectToList(BaseExpression::objectFieldPath('list'))),
+                Stage::set(list: BaseExpression::concatArrays(BaseExpression::arrayFieldPath('list'), [6])),
             ),
             $this->generateUpdatePipeline($diff),
         );
@@ -124,10 +123,10 @@ final class QueryGeneratorTest extends TestCase
 
         self::assertEquals(
             new Pipeline(
-                Stage::set(...['nested.list' => PipelineGenerator::listToObject(Expression::arrayFieldPath('nested.list'))]),
+                Stage::set(...['nested.list' => Expression::listToObject(BaseExpression::arrayFieldPath('nested.list'))]),
                 Stage::unset('nested.list.0', 'nested.list.3', 'nested.list.5'),
-                Stage::set(...['nested.list' => PipelineGenerator::objectToList(Expression::objectFieldPath('nested.list'))]),
-                Stage::set(...['nested.list' => Expression::concatArrays(Expression::arrayFieldPath('nested.list'), [6])]),
+                Stage::set(...['nested.list' => Expression::objectToList(BaseExpression::objectFieldPath('nested.list'))]),
+                Stage::set(...['nested.list' => BaseExpression::concatArrays(BaseExpression::arrayFieldPath('nested.list'), [6])]),
             ),
             $this->generateUpdatePipeline($diff),
         );
@@ -155,16 +154,16 @@ final class QueryGeneratorTest extends TestCase
 
         self::assertEquals(
             new Pipeline(
-                Stage::set(...['list' => PipelineGenerator::listToObject(Expression::arrayFieldPath('list'))]),
-                Stage::set(...['list.0' => PipelineGenerator::listToObject(Expression::arrayFieldPath('list.0'))]),
-                Stage::set(...['list.1' => PipelineGenerator::listToObject(Expression::arrayFieldPath('list.1'))]),
+                Stage::set(...['list' => Expression::listToObject(BaseExpression::arrayFieldPath('list'))]),
+                Stage::set(...['list.0' => Expression::listToObject(BaseExpression::arrayFieldPath('list.0'))]),
+                Stage::set(...['list.1' => Expression::listToObject(BaseExpression::arrayFieldPath('list.1'))]),
                 Stage::set(...['list.0.0' => 0, 'list.1.0' => -1]),
                 Stage::unset('list.0.1', 'list.1.2'),
-                Stage::set(...['list.1' => PipelineGenerator::objectToList(Expression::objectFieldPath('list.1'))]),
-                Stage::set(...['list.0' => PipelineGenerator::objectToList(Expression::objectFieldPath('list.0'))]),
-                Stage::set(...['list.0' => Expression::concatArrays(Expression::arrayFieldPath('list.0'), [5])]),
-                Stage::set(...['list' => PipelineGenerator::objectToList(Expression::objectFieldPath('list'))]),
-                Stage::set(...['list' => Expression::concatArrays(Expression::arrayFieldPath('list'), [[-2, -3]])]),
+                Stage::set(...['list.1' => Expression::objectToList(BaseExpression::objectFieldPath('list.1'))]),
+                Stage::set(...['list.0' => Expression::objectToList(BaseExpression::objectFieldPath('list.0'))]),
+                Stage::set(...['list.0' => BaseExpression::concatArrays(BaseExpression::arrayFieldPath('list.0'), [5])]),
+                Stage::set(...['list' => Expression::objectToList(BaseExpression::objectFieldPath('list'))]),
+                Stage::set(...['list' => BaseExpression::concatArrays(BaseExpression::arrayFieldPath('list'), [[-2, -3]])]),
             ),
             $this->generateUpdatePipeline($diff),
         );

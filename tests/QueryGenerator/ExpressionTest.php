@@ -2,19 +2,18 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Tests\QueryGenerator;
 
-use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\PipelineGenerator;
+use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\Expression;
 use Alcaeus\BsonDiffQueryGenerator\Tests\FunctionalTestCase;
 use MongoDB\Builder\BuilderEncoder;
-use MongoDB\Builder\Expression;
+use MongoDB\Builder\Expression as BaseExpression;
 use MongoDB\Builder\Pipeline;
 use MongoDB\Builder\Stage;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\TestCase;
 use function array_shift;
 use function iterator_to_array;
 
-#[CoversClass(PipelineGenerator::class)]
-final class PipelineGeneratorTest extends FunctionalTestCase
+#[CoversClass(Expression::class)]
+final class ExpressionTest extends FunctionalTestCase
 {
     private const TYPEMAP = ['root' => 'array', 'array' => 'array', 'document' => 'object'];
 
@@ -24,7 +23,7 @@ final class PipelineGeneratorTest extends FunctionalTestCase
         $collection->insertOne(['_id' => 1, 'list' => [1, 2, 3, 4, 5]]);
 
         $pipeline = new Pipeline(
-            Stage::set(list: PipelineGenerator::listToObject(Expression::arrayFieldPath('list'))),
+            Stage::set(list: Expression::listToObject(BaseExpression::arrayFieldPath('list'))),
         );
 
         $result = iterator_to_array(
@@ -46,7 +45,7 @@ final class PipelineGeneratorTest extends FunctionalTestCase
         $collection->insertOne(['_id' => 1, 'list' => (object) [1, 2, 3, 4, 5]]);
 
         $pipeline = new Pipeline(
-            Stage::set(list: PipelineGenerator::objectToList(Expression::objectFieldPath('list'))),
+            Stage::set(list: Expression::objectToList(BaseExpression::objectFieldPath('list'))),
         );
 
         $result = iterator_to_array(
@@ -77,7 +76,7 @@ final class PipelineGeneratorTest extends FunctionalTestCase
         $collection->insertOne(['_id' => 1, 'list' => $object]);
 
         $pipeline = new Pipeline(
-            Stage::set(list: PipelineGenerator::objectToList(Expression::objectFieldPath('list'))),
+            Stage::set(list: Expression::objectToList(BaseExpression::objectFieldPath('list'))),
         );
 
         $result = iterator_to_array(

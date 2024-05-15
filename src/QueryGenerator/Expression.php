@@ -2,66 +2,66 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\QueryGenerator;
 
-use MongoDB\Builder\Expression;
+use MongoDB\Builder\Expression as BaseExpression;
 use function MongoDB\object;
 
 /** @internal */
-final class PipelineGenerator
+final class Expression
 {
     /**
      * Generates an expression to turn the given array into an object.
      *
      * The resulting object contains numbered keys for each array element
      *
-     * @param Expression\ResolvesToArray $array
-     * @return Expression\ResolvesToObject
+     * @param BaseExpression\ResolvesToArray $array
+     * @return BaseExpression\ResolvesToObject
      */
-    public static function listToObject(Expression\ResolvesToArray $array): Expression\ResolvesToObject
+    public static function listToObject(BaseExpression\ResolvesToArray $array): BaseExpression\ResolvesToObject
     {
-        return Expression::arrayToObject(
+        return BaseExpression::arrayToObject(
             // Generate a list of objects { k: <index>, v: <element> }
-            Expression::map(
+            BaseExpression::map(
                 // Generate a list of arrays: [{ k: <index> }, { v: <element} }]
-                input: Expression::zip(
+                input: BaseExpression::zip(
                     inputs: [
                         self::generateKeyObjectList($array),
                         self::generateValueObjectList($array),
                     ],
                 ),
-                in: Expression::mergeObjects(Expression::variable('this')),
+                in: BaseExpression::mergeObjects(BaseExpression::variable('this')),
             ),
         );
     }
 
-    public static function objectToList(Expression\ResolvesToObject $object): Expression\ResolvesToArray
+    public static function objectToList(BaseExpression\ResolvesToObject $object): BaseExpression\ResolvesToArray
     {
         // Extract only the value from the list of key/value objects
-        return Expression::map(
+        return BaseExpression::map(
             // Sort arrays by their key value, as we can't rely on key order in objects
-            input: Expression::sortArray(
+            input: BaseExpression::sortArray(
                 // Convert the keys to integers to ensure proper sort order
-                input: Expression::map(
+                input: BaseExpression::map(
                     // Convert an object to an array containing { k: <key>, v: <value> } objects
-                    input: Expression::objectToArray($object),
+                    input: BaseExpression::objectToArray($object),
                     in: object(
-                        k: Expression::toInt(Expression::variable('this.k')),
-                        v: Expression::variable('this.v'),
+                        k: BaseExpression::toInt(BaseExpression::variable('this.k')),
+                        v: BaseExpression::variable('this.v'),
                     ),
                 ),
                 sortBy: object(k: 1)
             ),
-            in: Expression::variable('this.v'),
+            in: BaseExpression::variable('this.v'),
         );
     }
 
     /**
      * For a given list, returns an array containing the indexes for the list
      */
-    private static function getListKeyRange(Expression\ResolvesToArray $array): Expression\ResolvesToArray
+    private static function getListKeyRange(BaseExpression\ResolvesToArray $array): BaseExpression\ResolvesToArray
     {
-        return Expression::range(
+        return BaseExpression::range(
             0,
-            Expression::size($array),
+            BaseExpression::size($array),
             1,
         );
     }
@@ -69,23 +69,23 @@ final class PipelineGenerator
     /**
      * For a given list, generates objects in the form { k: <value> } to be used in the $arrayToObject operator
      */
-    private static function generateKeyObjectList(Expression\ResolvesToArray $array): Expression\MapOperator
+    private static function generateKeyObjectList(BaseExpression\ResolvesToArray $array): BaseExpression\MapOperator
     {
-        return Expression::map(
+        return BaseExpression::map(
             input: self::getListKeyRange($array),
             // The key for $arrayToObject must be a string
-            in: object(k: Expression::toString(Expression::variable('this'))),
+            in: object(k: BaseExpression::toString(BaseExpression::variable('this'))),
         );
     }
 
     /**
      * For a given list, generates objects in the form { v: <value> } to be used in the $arrayToObject operator
      */
-    private static function generateValueObjectList(Expression\ResolvesToArray $array): Expression\MapOperator
+    private static function generateValueObjectList(BaseExpression\ResolvesToArray $array): BaseExpression\MapOperator
     {
-        return Expression::map(
+        return BaseExpression::map(
             input: $array,
-            in: object(v: Expression::variable('this')),
+            in: object(v: BaseExpression::variable('this')),
         );
     }
 }

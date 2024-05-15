@@ -6,7 +6,7 @@ use Alcaeus\BsonDiffQueryGenerator\Diff\Diff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
-use MongoDB\Builder\Expression;
+use MongoDB\Builder\Expression as BaseExpression;
 use MongoDB\Builder\Pipeline;
 use MongoDB\Builder\Stage;
 use MongoDB\Builder\Stage\SetStage;
@@ -115,19 +115,19 @@ final class QueryGenerator
 
     private function convertListToObject(string $key): SetStage
     {
-        return Stage::set(...[$key => PipelineGenerator::listToObject(Expression::arrayFieldPath($key))]);
+        return Stage::set(...[$key => Expression::listToObject(BaseExpression::arrayFieldPath($key))]);
     }
 
     private function convertObjectToList(string $key): SetStage
     {
-        return Stage::set(...[$key => PipelineGenerator::objectToList(Expression::objectFieldPath($key))]);
+        return Stage::set(...[$key => Expression::objectToList(BaseExpression::objectFieldPath($key))]);
     }
 
     private function pushNewListElements(string $key, array $elements): SetStage
     {
         return Stage::set(
-            ...[$key => Expression::concatArrays(
-                Expression::arrayFieldPath($key),
+            ...[$key => BaseExpression::concatArrays(
+                BaseExpression::arrayFieldPath($key),
                 $elements,
             )],
         );
