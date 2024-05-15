@@ -57,8 +57,7 @@ final class QueryGenerator
         return new Pipeline(...$stages);
     }
 
-    // TODO: make private
-    public function generateQueryObject(ObjectDiff $objectDiff): Query
+    private function generateQueryObject(ObjectDiff $objectDiff): Query
     {
         $query = new Query(
             $objectDiff->addedValues,
@@ -96,7 +95,7 @@ final class QueryGenerator
         };
     }
 
-    public function generateListQueryObject(ListDiff $listDiff): Query
+    private function generateListQueryObject(ListDiff $listDiff): Query
     {
         $query = new Query(
             unset: $listDiff->removedKeys,
