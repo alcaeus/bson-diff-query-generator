@@ -23,22 +23,8 @@ class PipelineGenerator
                 // Generate a list of arrays: [{ k: <index> }, { v: <element} }]
                 input: Expression::zip(
                     inputs: [
-                        // Generate a list of objects { k: <index> }
-                        Expression::map(
-                            // Generate the range of indexes since it's not available any different way
-                            input: Expression::range(
-                                0,
-                                Expression::size($array),
-                                1,
-                            ),
-                            // The key for $arrayToObject must be a string
-                            in: object(k: Expression::toString(Expression::variable('this'))),
-                        ),
-                        // Generate a list of objects { v: <element> }
-                        Expression::map(
-                            input: $array,
-                            in: object(v: Expression::variable('this')),
-                        ),
+                        self::generateKeyObjectList($array),
+                        self::generateValueObjectList($array),
                     ],
                 ),
                 in: Expression::mergeObjects(Expression::variable('this')),
@@ -52,11 +38,53 @@ class PipelineGenerator
         return Expression::map(
             // Sort arrays by their key value, as we can't rely on key order in objects
             input: Expression::sortArray(
-                // Convert an object to an array containing { k: <key>, v: <value> } objects
-                input: Expression::objectToArray($object),
+                // Convert the keys to integers to ensure proper sort order
+                input: Expression::map(
+                    // Convert an object to an array containing { k: <key>, v: <value> } objects
+                    input: Expression::objectToArray($object),
+                    in: object(
+                        k: Expression::toInt(Expression::variable('this.k')),
+                        v: Expression::variable('this.v'),
+                    ),
+                ),
                 sortBy: object(k: 1)
             ),
             in: Expression::variable('this.v'),
+        );
+    }
+
+    /**
+     * For a given list, returns an array containing the indexes for the list
+     */
+    private static function getListKeyRange(Expression\ResolvesToArray $array): Expression\ResolvesToArray
+    {
+        return Expression::range(
+            0,
+            Expression::size($array),
+            1,
+        );
+    }
+
+    /**
+     * For a given list, generates objects in the form { k: <value> } to be used in the $arrayToObject operator
+     */
+    private static function generateKeyObjectList(Expression\ResolvesToArray $array): Expression\MapOperator
+    {
+        return Expression::map(
+            input: self::getListKeyRange($array),
+            // The key for $arrayToObject must be a string
+            in: object(k: Expression::toString(Expression::variable('this'))),
+        );
+    }
+
+    /**
+     * For a given list, generates objects in the form { v: <value> } to be used in the $arrayToObject operator
+     */
+    private static function generateValueObjectList(Expression\ResolvesToArray $array): Expression\MapOperator
+    {
+        return Expression::map(
+            input: $array,
+            in: object(v: Expression::variable('this')),
         );
     }
 }
