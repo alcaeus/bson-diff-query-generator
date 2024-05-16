@@ -333,26 +333,31 @@ final class UpdateGeneratorTest extends TestCase
         );
     }
 
-    public function testGenerateUpdateObjectForEmbeddedDocument(): void
+    public function testGenerateUpdateObjectForNestedList(): void
     {
-        $diff = new ObjectDiff(
-            changedValues: ['document' => new ObjectDiff(
-                changedValues: ['list' => new ListDiff(
-                    changedValues: [0 => new ValueDiff(1)],
-                )],
-            )],
-        );
+        $diff = new ObjectDiff(changedValues: [
+            'nested' => new ObjectDiff(changedValues: [
+                'list' => new ListDiff(changedValues: [
+                    0 => new ValueDiff(1)
+                ]),
+                'document' => new ObjectDiff(changedValues: [
+                    'list' => new ListDiff(changedValues: [
+                        0 => new ValueDiff(1)
+                    ]),
+                ]),
+            ]),
+        ]);
 
         $update = (new UpdateGenerator())->generateUpdateObject($diff);
 
         self::assertEquals(
             [
-                'document' => BaseExpression::mergeObjects(
-                    BaseExpression::fieldPath('document'),
+                'nested' => BaseExpression::mergeObjects(
+                    BaseExpression::fieldPath('nested'),
                     [
                         'list' => Expression::extractValuesFromList(
                             BaseExpression::map(
-                                input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('document.list')),
+                                input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('nested.list')),
                                 in: BaseExpression::switch(
                                     branches: [
                                         BaseExpression::case(
@@ -366,6 +371,28 @@ final class UpdateGeneratorTest extends TestCase
                                     default: BaseExpression::variable('this'),
                                 )
                             )
+                        ),
+                        'document' => BaseExpression::mergeObjects(
+                            BaseExpression::fieldPath('nested.document'),
+                            [
+                                'list' => Expression::extractValuesFromList(
+                                    BaseExpression::map(
+                                        input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('nested.document.list')),
+                                        in: BaseExpression::switch(
+                                            branches: [
+                                                BaseExpression::case(
+                                                    case: BaseExpression::eq(BaseExpression::variable('this.k'), 0),
+                                                    then: BaseExpression::mergeObjects(
+                                                        BaseExpression::variable('this'),
+                                                        object(v: BaseExpression::literal(1)),
+                                                    ),
+                                                ),
+                                            ],
+                                            default: BaseExpression::variable('this'),
+                                        )
+                                    )
+                                ),
+                            ],
                         ),
                     ],
                 ),
