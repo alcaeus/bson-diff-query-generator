@@ -1,6 +1,6 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator\QueryGenerator;
+namespace Alcaeus\BsonDiffQueryGenerator\Update;
 
 use MongoDB\Builder\Expression as BaseExpression;
 use function MongoDB\object;

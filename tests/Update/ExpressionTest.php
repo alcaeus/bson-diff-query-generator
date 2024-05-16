@@ -1,8 +1,8 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator\Tests\QueryGenerator;
+namespace Alcaeus\BsonDiffQueryGenerator\Tests\Update;
 
-use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\Expression;
+use Alcaeus\BsonDiffQueryGenerator\Update\Expression;
 use Alcaeus\BsonDiffQueryGenerator\Tests\FunctionalTestCase;
 use MongoDB\Builder\BuilderEncoder;
 use MongoDB\Builder\Expression as BaseExpression;

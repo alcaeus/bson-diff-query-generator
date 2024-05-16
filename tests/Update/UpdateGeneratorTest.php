@@ -1,6 +1,6 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator\Tests\QueryGenerator;
+namespace Alcaeus\BsonDiffQueryGenerator\Tests\Update;
 
 use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiffer;
 use Alcaeus\BsonDiffQueryGenerator\Diff\Diff;
@@ -9,9 +9,9 @@ use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiffer;
-use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\Expression;
-use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\Query;
-use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\QueryGenerator;
+use Alcaeus\BsonDiffQueryGenerator\Update\Expression;
+use Alcaeus\BsonDiffQueryGenerator\Update\Update;
+use Alcaeus\BsonDiffQueryGenerator\Update\UpdateGenerator;
 use MongoDB\Builder\Expression as BaseExpression;
 use MongoDB\Builder\Pipeline;
 use MongoDB\Builder\Stage;
@@ -19,16 +19,16 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(QueryGenerator::class)]
+#[CoversClass(UpdateGenerator::class)]
 #[UsesClass(ArrayDiffer::class)]
 #[UsesClass(Differ::class)]
 #[UsesClass(ListDiff::class)]
 #[UsesClass(Expression::class)]
-#[UsesClass(Query::class)]
+#[UsesClass(Update::class)]
 #[UsesClass(ObjectDiff::class)]
 #[UsesClass(ValueDiff::class)]
 #[UsesClass(ValueDiffer::class)]
-final class QueryGeneratorTest extends TestCase
+final class UpdateGeneratorTest extends TestCase
 {
     public function testSimpleObject(): void
     {
@@ -176,6 +176,6 @@ final class QueryGeneratorTest extends TestCase
 
     private function generateUpdatePipeline(ObjectDiff $diff): Pipeline
     {
-        return (new QueryGenerator())->generateUpdatePipeline($diff);
+        return (new UpdateGenerator())->generateUpdatePipeline($diff);
     }
 }

@@ -1,9 +1,10 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator\Tests;
+namespace Alcaeus\BsonDiffQueryGenerator\Tests\Update;
 
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiffer;
-use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\QueryGenerator;
+use Alcaeus\BsonDiffQueryGenerator\Tests\FunctionalTestCase;
+use Alcaeus\BsonDiffQueryGenerator\Update\UpdateGenerator;
 use Generator;
 use MongoDB\Builder\BuilderEncoder;
 use PHPUnit\Framework\Attributes\CoversNothing;
@@ -22,7 +23,7 @@ final class FunctionalUpdateTest extends FunctionalTestCase
         $collection->insertOne($old);
 
         $diff = (new ObjectDiffer())->getDiff($old, $new);
-        $pipeline = (new QueryGenerator())->generateUpdatePipeline($diff);
+        $pipeline = (new UpdateGenerator())->generateUpdatePipeline($diff);
 
         $result = iterator_to_array(
             $collection->aggregate(

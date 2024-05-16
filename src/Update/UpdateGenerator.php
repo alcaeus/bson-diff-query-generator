@@ -1,6 +1,6 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator\QueryGenerator;
+namespace Alcaeus\BsonDiffQueryGenerator\Update;
 
 use Alcaeus\BsonDiffQueryGenerator\Diff\Diff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
@@ -17,7 +17,7 @@ use function array_reduce;
 use function array_values;
 use function rsort;
 
-final class QueryGenerator
+final class UpdateGenerator
 {
     public function generateUpdatePipeline(ObjectDiff $objectDiff): Pipeline
     {
@@ -57,16 +57,16 @@ final class QueryGenerator
         return new Pipeline(...$stages);
     }
 
-    private function generateQueryObject(ObjectDiff $objectDiff): Query
+    private function generateQueryObject(ObjectDiff $objectDiff): Update
     {
-        $query = new Query(
+        $query = new Update(
             $objectDiff->addedValues,
             $objectDiff->removedFields,
         );
 
         return array_reduce(
             array_keys($objectDiff->changedValues),
-            fn (Query $query, string $key) => $this->updateQueryForDiff(
+            fn (Update $query, string $key) => $this->updateQueryForDiff(
                 $key,
                 $objectDiff->changedValues[$key],
                 $query,
@@ -75,7 +75,7 @@ final class QueryGenerator
         );
     }
 
-    private function updateQueryForDiff(string $key, Diff $diff, Query $query): Query
+    private function updateQueryForDiff(string $key, Diff $diff, Update $query): Update
     {
         return match ($diff::class) {
             // Simple value: add to $set operator
@@ -95,16 +95,16 @@ final class QueryGenerator
         };
     }
 
-    private function generateListQueryObject(ListDiff $listDiff): Query
+    private function generateListQueryObject(ListDiff $listDiff): Update
     {
-        $query = new Query(
+        $query = new Update(
             unset: $listDiff->removedKeys,
             push: ['' => array_values($listDiff->addedValues)],
         );
 
         return array_reduce(
             array_keys($listDiff->changedValues),
-            fn (Query $query, int|string $index) => $this->updateQueryForDiff(
+            fn (Update $query, int|string $index) => $this->updateQueryForDiff(
                 (string) $index,
                 $listDiff->changedValues[$index],
                 $query,
@@ -134,7 +134,7 @@ final class QueryGenerator
     }
 
     /** @return list<SetStage|Pipeline> */
-    private function pushNewElementsAndConvertList(Query $query): array
+    private function pushNewElementsAndConvertList(Update $query): array
     {
         $lists = $query->lists;
 

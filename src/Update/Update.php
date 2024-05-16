@@ -1,6 +1,6 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator\QueryGenerator;
+namespace Alcaeus\BsonDiffQueryGenerator\Update;
 
 use function array_combine;
 use function array_keys;
@@ -10,7 +10,7 @@ use function array_values;
 use function sprintf;
 
 /** @internal */
-final readonly class Query
+final readonly class Update
 {
     /** @var list<string> */
     public array $unset;

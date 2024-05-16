@@ -1,17 +1,17 @@
 <?php
 
-namespace Alcaeus\BsonDiffQueryGenerator\Tests\QueryGenerator;
+namespace Alcaeus\BsonDiffQueryGenerator\Tests\Update;
 
-use Alcaeus\BsonDiffQueryGenerator\QueryGenerator\Query;
+use Alcaeus\BsonDiffQueryGenerator\Update\Update;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(Query::class)]
-final class QueryTest extends TestCase
+#[CoversClass(Update::class)]
+final class UpdateTest extends TestCase
 {
     public function testStoresValues(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
@@ -24,7 +24,7 @@ final class QueryTest extends TestCase
 
     public function testWithSet(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
@@ -39,7 +39,7 @@ final class QueryTest extends TestCase
 
     public function testWithUnset(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
@@ -54,7 +54,7 @@ final class QueryTest extends TestCase
 
     public function testWithPush(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
@@ -69,7 +69,7 @@ final class QueryTest extends TestCase
 
     public function testCombineWithSet(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
@@ -84,7 +84,7 @@ final class QueryTest extends TestCase
 
     public function testCombineWithUnset(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
@@ -99,7 +99,7 @@ final class QueryTest extends TestCase
 
     public function testCombineWithPush(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
@@ -114,14 +114,14 @@ final class QueryTest extends TestCase
 
     public function testCombineWithQuery(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
         );
 
         $query = $query->combineWithQuery(
-            new Query(
+            new Update(
                 ['baz' => 'foo'],
                 ['foobar'],
                 ['qaz' => [3]],
@@ -135,14 +135,14 @@ final class QueryTest extends TestCase
 
     public function testCombineWithQueryDuplicateKeys(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
         );
 
         $query = $query->combineWithQuery(
-            new Query(
+            new Update(
                 ['foo' => 'baz'],
                 ['foobar'],
                 ['qaz' => [3]],
@@ -156,14 +156,14 @@ final class QueryTest extends TestCase
 
     public function testCombineWithPrefixedQuery(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
         );
 
         $query = $query->combineWithPrefixedQuery(
-            new Query(
+            new Update(
                 ['baz' => 'foo'],
                 ['foobar'],
             ),
@@ -178,14 +178,14 @@ final class QueryTest extends TestCase
 
     public function testCombineWithPrefixedList(): void
     {
-        $query = new Query(
+        $query = new Update(
             ['foo' => 'bar'],
             ['bar'],
             ['baz' => [1]],
         );
 
         $query = $query->combineWithPrefixedQuery(
-            new Query(
+            new Update(
                 ['baz' => 'foo'],
                 ['foobar'],
                 // An empty name means we're pushing to the element we're prefixing with
