@@ -27,6 +27,16 @@
             "Alcaeus\\BsonDiffQueryGenerator\\Tests\\": "tests/"
         }
     },
+    "scripts": {
+        "checks": [
+            "@check:cs",
+            "@check:psalm"
+        ],
+        "check:cs": "phpcs",
+        "check:psalm": "psalm",
+        "fix:cs": "phpcbf",
+        "test": "phpunit"
+    },
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
