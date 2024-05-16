@@ -52,18 +52,20 @@ final class ArrayDiffer implements DifferInterface
             $changedValues = array_combine(
                 array_keys($changedValues),
                 array_map(
+                    /** @psalm-suppress MixedArgument */
                     static fn (Diff $diff, int|string $changedKey): Diff => is_int($changedKey) && is_object($old[$changedKey]) && isset($old[$changedKey]->_id)
-                            ? new ConditionalDiff($old[$changedKey]->_id, $diff)
-                            : $diff,
+                        ? new ConditionalDiff($old[$changedKey]->_id, $diff)
+                        : $diff,
                     $changedValues,
                     array_keys($changedValues),
                 ),
             );
 
             $removedKeys = array_map(
+            /** @psalm-suppress MixedArgument */
                 static fn (int|string $removedKey): int|string|ConditionalDiff => is_int($removedKey) && is_object($old[$removedKey]) && isset($old[$removedKey]->_id)
-                        ? new ConditionalDiff($old[$removedKey]->_id)
-                        : $removedKey,
+                    ? new ConditionalDiff($old[$removedKey]->_id)
+                    : $removedKey,
                 $removedKeys,
             );
         }

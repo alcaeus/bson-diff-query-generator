@@ -48,6 +48,7 @@ final class Expression
         return BaseExpression::concatArrays(
             $input,
             array_map(
+                /** @psalm-suppress MixedArgument */
                 static fn (mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
                 array_values($items),
             ),

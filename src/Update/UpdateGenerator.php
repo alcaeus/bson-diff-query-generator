@@ -28,6 +28,7 @@ final class UpdateGenerator
 {
     public static function generateUpdatePipelineForDiff(ObjectDiff $objectDiff): Pipeline
     {
+        /** @psalm-suppress MixedArgument */
         return new Pipeline(
             Stage::set(...self::generateUpdateObject($objectDiff)),
         );
@@ -48,6 +49,7 @@ final class UpdateGenerator
 
         return array_merge(
             array_map(
+                /** @psalm-suppress MixedArgument */
                 static fn (mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
                 $objectDiff->addedValues,
             ),
@@ -141,6 +143,7 @@ final class UpdateGenerator
 
     private static function generateFieldExpression(BaseExpression\FieldPath|BaseExpression\Variable $path, Diff $fieldDiff): BaseExpression\ResolvesToAny|BaseExpression\ResolvesToObject|BaseExpression\ResolvesToArray
     {
+        /** @psalm-suppress MixedArgument */
         return match ($fieldDiff::class) {
             // Simple value: return wrapped in a $literal operator to prevent execution of dollars
             ValueDiff::class => BaseExpression::literal($fieldDiff->value),
