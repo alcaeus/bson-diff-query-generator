@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 final class DifferTest extends TestCase
 {
     #[DataProvider('provideDifferTests')]
-    public function testValueDiffer($expected, $old, $new): void
+    public function testValueDiffer(mixed $expected, mixed $old, mixed $new): void
     {
         self::assertEquals(
             $expected,

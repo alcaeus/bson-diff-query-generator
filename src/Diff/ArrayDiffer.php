@@ -93,7 +93,7 @@ final class ArrayDiffer implements DifferInterface
     private function couldBeList(array $array): bool
     {
         $previousKey = null;
-        foreach ($array as $key => $_) {
+        foreach (array_keys($array) as $key) {
             if (! is_int($key)) {
                 return false;
             }
