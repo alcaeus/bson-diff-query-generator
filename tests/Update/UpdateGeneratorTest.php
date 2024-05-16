@@ -330,7 +330,7 @@ final class UpdateGeneratorTest extends TestCase
         );
     }
 
-    public function testGenerateUpdateObjectForNestedList(): void
+    public function testGenerateUpdatePipelineForNestedList(): void
     {
         $diff = new ObjectDiff(changedValues: [
             'nested' => new ObjectDiff(changedValues: [
@@ -345,56 +345,56 @@ final class UpdateGeneratorTest extends TestCase
             ]),
         ]);
 
-        $update = (new UpdateGenerator())->generateUpdateObject($diff);
-
         self::assertEquals(
-            [
-                'nested' => BaseExpression::mergeObjects(
-                    BaseExpression::fieldPath('nested'),
-                    [
-                        'list' => Expression::extractValuesFromList(
-                            BaseExpression::map(
-                                input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('nested.list')),
-                                in: BaseExpression::switch(
-                                    branches: [
-                                        BaseExpression::case(
-                                            case: BaseExpression::eq(BaseExpression::variable('this.k'), 0),
-                                            then: BaseExpression::mergeObjects(
-                                                BaseExpression::variable('this'),
-                                                object(v: BaseExpression::literal(1)),
-                                            ),
-                                        ),
-                                    ],
-                                    default: BaseExpression::variable('this'),
-                                ),
-                            ),
-                        ),
-                        'document' => BaseExpression::mergeObjects(
-                            BaseExpression::fieldPath('nested.document'),
-                            [
-                                'list' => Expression::extractValuesFromList(
-                                    BaseExpression::map(
-                                        input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('nested.document.list')),
-                                        in: BaseExpression::switch(
-                                            branches: [
-                                                BaseExpression::case(
-                                                    case: BaseExpression::eq(BaseExpression::variable('this.k'), 0),
-                                                    then: BaseExpression::mergeObjects(
-                                                        BaseExpression::variable('this'),
-                                                        object(v: BaseExpression::literal(1)),
-                                                    ),
+            new Pipeline(
+                Stage::set(
+                    nested: BaseExpression::mergeObjects(
+                        BaseExpression::fieldPath('nested'),
+                        [
+                            'list' => Expression::extractValuesFromList(
+                                BaseExpression::map(
+                                    input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('nested.list')),
+                                    in: BaseExpression::switch(
+                                        branches: [
+                                            BaseExpression::case(
+                                                case: BaseExpression::eq(BaseExpression::variable('this.k'), 0),
+                                                then: BaseExpression::mergeObjects(
+                                                    BaseExpression::variable('this'),
+                                                    object(v: BaseExpression::literal(1)),
                                                 ),
-                                            ],
-                                            default: BaseExpression::variable('this'),
-                                        ),
+                                            ),
+                                        ],
+                                        default: BaseExpression::variable('this'),
                                     ),
                                 ),
-                            ],
-                        ),
-                    ],
+                            ),
+                            'document' => BaseExpression::mergeObjects(
+                                BaseExpression::fieldPath('nested.document'),
+                                [
+                                    'list' => Expression::extractValuesFromList(
+                                        BaseExpression::map(
+                                            input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('nested.document.list')),
+                                            in: BaseExpression::switch(
+                                                branches: [
+                                                    BaseExpression::case(
+                                                        case: BaseExpression::eq(BaseExpression::variable('this.k'), 0),
+                                                        then: BaseExpression::mergeObjects(
+                                                            BaseExpression::variable('this'),
+                                                            object(v: BaseExpression::literal(1)),
+                                                        ),
+                                                    ),
+                                                ],
+                                                default: BaseExpression::variable('this'),
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
                 ),
-            ],
-            $update,
+            ),
+            (new UpdateGenerator())->generateUpdatePipeline($diff),
         );
     }
 

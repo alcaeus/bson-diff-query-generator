@@ -34,7 +34,7 @@ final class UpdateGenerator
     }
 
     /** @return array<string, mixed> */
-    public function generateUpdateObject(ObjectDiff $objectDiff, BaseExpression\FieldPath|BaseExpression\Variable|null $prefix = null): array
+    private function generateUpdateObject(ObjectDiff $objectDiff, BaseExpression\FieldPath|BaseExpression\Variable|null $prefix = null): array
     {
         $prefixKey = match (true) {
             $prefix instanceof BaseExpression\FieldPath => $prefix->name . '.',
