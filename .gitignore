@@ -3,3 +3,6 @@
 
 /phpunit.xml
 /.phpunit.cache
+
+/phpcs.xml
+/.phpcs.cache
