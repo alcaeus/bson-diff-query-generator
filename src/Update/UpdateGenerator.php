@@ -26,15 +26,15 @@ use function MongoDB\object;
 
 final class UpdateGenerator
 {
-    public function generateUpdatePipeline(ObjectDiff $objectDiff): Pipeline
+    public static function generateUpdatePipelineForDiff(ObjectDiff $objectDiff): Pipeline
     {
         return new Pipeline(
-            Stage::set(...$this->generateUpdateObject($objectDiff)),
+            Stage::set(...self::generateUpdateObject($objectDiff)),
         );
     }
 
     /** @return array<string, mixed> */
-    private function generateUpdateObject(ObjectDiff $objectDiff, BaseExpression\FieldPath|BaseExpression\Variable|null $prefix = null): array
+    private static function generateUpdateObject(ObjectDiff $objectDiff, BaseExpression\FieldPath|BaseExpression\Variable|null $prefix = null): array
     {
         $prefixKey = match (true) {
             $prefix instanceof BaseExpression\FieldPath => $prefix->name . '.',
@@ -58,7 +58,7 @@ final class UpdateGenerator
             array_combine(
                 array_keys($objectDiff->changedValues),
                 array_map(
-                    fn (string $key, Diff $diff) => $this->generateFieldExpression($getFieldValue($key), $diff),
+                    static fn (string $key, Diff $diff) => self::generateFieldExpression($getFieldValue($key), $diff),
                     array_keys($objectDiff->changedValues),
                     $objectDiff->changedValues,
                 ),
@@ -66,12 +66,12 @@ final class UpdateGenerator
         );
     }
 
-    private function generateListUpdate(BaseExpression\ResolvesToArray $input, ListDiff $diff): BaseExpression\ResolvesToArray
+    private static function generateListUpdate(BaseExpression\ResolvesToArray $input, ListDiff $diff): BaseExpression\ResolvesToArray
     {
-        return $this->appendItemsToList(
+        return Expression::appendItemsToList(
             Expression::extractValuesFromList(
-                $this->createRemovedListItemFilter(
-                    input: $this->generateListItemUpdates(
+                self::createRemovedListItemFilter(
+                    input: self::generateListItemUpdates(
                         input: Expression::wrapValuesWithKeys($input),
                         changedValues: $diff->changedValues,
                     ),
@@ -83,7 +83,7 @@ final class UpdateGenerator
     }
 
     /** @param array<array-key, Diff> $changedValues */
-    private function generateListItemUpdates(BaseExpression\ResolvesToArray $input, array $changedValues): BaseExpression\ResolvesToArray
+    private static function generateListItemUpdates(BaseExpression\ResolvesToArray $input, array $changedValues): BaseExpression\ResolvesToArray
     {
         if ($changedValues === []) {
             return $input;
@@ -93,7 +93,7 @@ final class UpdateGenerator
             input: $input,
             in: BaseExpression::switch(
                 array_map(
-                    $this->generateListItemUpdateBranch(...),
+                    self::generateListItemUpdateBranch(...),
                     array_values($changedValues),
                     array_keys($changedValues),
                 ),
@@ -102,27 +102,27 @@ final class UpdateGenerator
         );
     }
 
-    private function generateListItemUpdateBranch(Diff $fieldDiff, int|string $key): BaseExpression\CaseOperator
+    private static function generateListItemUpdateBranch(Diff $fieldDiff, int|string $key): BaseExpression\CaseOperator
     {
+        $comparisonKey = $key;
+        $diff = $fieldDiff;
+
         if ($fieldDiff instanceof ConditionalDiff) {
             $comparisonKey = $fieldDiff;
             $diff = $fieldDiff->diff ?? throw new LogicException('Cannot generate update for empty diff');
         }
 
-        $comparisonKey = $key;
-        $diff = $fieldDiff;
-
         return BaseExpression::case(
-            case: $this->generateListItemMatchCondition($comparisonKey),
+            case: self::generateListItemMatchCondition($comparisonKey),
             then: BaseExpression::mergeObjects(
                 BaseExpression::variable('this'),
-                object(v: $this->generateFieldExpression(BaseExpression::variable('this.v'), $diff)),
+                object(v: self::generateFieldExpression(BaseExpression::variable('this.v'), $diff)),
             ),
         );
     }
 
     /** @param list<int|string|ConditionalDiff> $removedKeys */
-    private function createRemovedListItemFilter(BaseExpression\ResolvesToArray $input, array $removedKeys): BaseExpression\ResolvesToArray
+    private static function createRemovedListItemFilter(BaseExpression\ResolvesToArray $input, array $removedKeys): BaseExpression\ResolvesToArray
     {
         if ($removedKeys === []) {
             return $input;
@@ -132,14 +132,14 @@ final class UpdateGenerator
             $input,
             BaseExpression::and(
                 ...array_map(
-                    fn (int|string|ConditionalDiff $value): BaseExpression\ResolvesToBool => $this->generateListItemMatchCondition($value, negate: true),
+                    static fn (int|string|ConditionalDiff $value): BaseExpression\ResolvesToBool => self::generateListItemMatchCondition($value, negate: true),
                     $removedKeys,
                 ),
             ),
         );
     }
 
-    private function generateFieldExpression(BaseExpression\FieldPath|BaseExpression\Variable $path, Diff $fieldDiff): BaseExpression\ResolvesToAny|BaseExpression\ResolvesToObject|BaseExpression\ResolvesToArray
+    private static function generateFieldExpression(BaseExpression\FieldPath|BaseExpression\Variable $path, Diff $fieldDiff): BaseExpression\ResolvesToAny|BaseExpression\ResolvesToObject|BaseExpression\ResolvesToArray
     {
         return match ($fieldDiff::class) {
             // Simple value: return wrapped in a $literal operator to prevent execution of dollars
@@ -148,33 +148,18 @@ final class UpdateGenerator
             // Object diff: apply with a prefix
             ObjectDiff::class => BaseExpression::mergeObjects(
                 $path,
-                $this->generateUpdateObject($fieldDiff, $path),
+                self::generateUpdateObject($fieldDiff, $path),
             ),
 
             // List diff: use the $map operator to traverse the list and update elements
-            ListDiff::class => $this->generateListUpdate(
+            ListDiff::class => self::generateListUpdate(
                 $path,
                 $fieldDiff,
             ),
         };
     }
 
-    private function appendItemsToList(BaseExpression\ResolvesToArray $input, array $addedValues): BaseExpression\ResolvesToArray
-    {
-        if ($addedValues === []) {
-            return $input;
-        }
-
-        return BaseExpression::concatArrays(
-            $input,
-            array_map(
-                static fn (mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
-                array_values($addedValues),
-            ),
-        );
-    }
-
-    private function generateListItemMatchCondition(int|string|ConditionalDiff $value, bool $negate = false): BaseExpression\ResolvesToBool
+    private static function generateListItemMatchCondition(int|string|ConditionalDiff $value, bool $negate = false): BaseExpression\ResolvesToBool
     {
         $comparison = $negate
             ? static fn (BaseExpression\Variable $variable, Type|ExpressionInterface|stdClass|array|bool|float|int|string|null $value): BaseExpression\ResolvesToBool => BaseExpression::ne($variable, $value)

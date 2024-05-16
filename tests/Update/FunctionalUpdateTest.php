@@ -27,7 +27,7 @@ final class FunctionalUpdateTest extends FunctionalTestCase
         $collection->insertOne($old);
 
         $diff = (new ObjectDiffer())->getDiff($old, $new);
-        $pipeline = (new UpdateGenerator())->generateUpdatePipeline($diff);
+        $pipeline = UpdateGenerator::generateUpdatePipelineForDiff($diff);
 
         $result = iterator_to_array(
             $collection->aggregate(
@@ -188,7 +188,7 @@ final class FunctionalUpdateTest extends FunctionalTestCase
         // Use array_values to deal with the missing key
         $new->embeddedDocs = array_values($new->embeddedDocs);
 
-        $pipeline = (new UpdateGenerator())->generateUpdatePipeline($diff);
+        $pipeline = UpdateGenerator::generateUpdatePipelineForDiff($diff);
 
         $result = iterator_to_array(
             $collection->aggregate(
@@ -236,7 +236,7 @@ final class FunctionalUpdateTest extends FunctionalTestCase
         $collection->updateOne(['_id' => 1], ['$pull' => ['embeddedDocs' => ['_id' => 2]]]);
 
         $diff = (new ObjectDiffer())->getDiff($old, $new);
-        $pipeline = (new UpdateGenerator())->generateUpdatePipeline($diff);
+        $pipeline = UpdateGenerator::generateUpdatePipelineForDiff($diff);
 
         $result = iterator_to_array(
             $collection->aggregate(

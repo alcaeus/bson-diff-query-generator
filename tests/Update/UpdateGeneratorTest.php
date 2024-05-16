@@ -394,7 +394,7 @@ final class UpdateGeneratorTest extends TestCase
                     ),
                 ),
             ),
-            (new UpdateGenerator())->generateUpdatePipeline($diff),
+            UpdateGenerator::generateUpdatePipelineForDiff($diff),
         );
     }
 
@@ -405,6 +405,6 @@ final class UpdateGeneratorTest extends TestCase
 
     private function generateUpdatePipeline(ObjectDiff $diff): Pipeline
     {
-        return (new UpdateGenerator())->generateUpdatePipeline($diff);
+        return UpdateGenerator::generateUpdatePipelineForDiff($diff);
     }
 }

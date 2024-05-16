@@ -4,6 +4,8 @@ namespace Alcaeus\BsonDiffQueryGenerator\Update;
 
 use MongoDB\Builder\Expression as BaseExpression;
 
+use function array_map;
+use function array_values;
 use function MongoDB\object;
 
 /** @internal */
@@ -34,6 +36,21 @@ final class Expression
                 ],
             ),
             in: BaseExpression::mergeObjects(BaseExpression::variable('this')),
+        );
+    }
+
+    public static function appendItemsToList(BaseExpression\ResolvesToArray $input, array $items): BaseExpression\ResolvesToArray
+    {
+        if ($items === []) {
+            return $input;
+        }
+
+        return BaseExpression::concatArrays(
+            $input,
+            array_map(
+                static fn (mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
+                array_values($items),
+            ),
         );
     }
 
