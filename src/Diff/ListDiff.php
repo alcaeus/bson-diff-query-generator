@@ -6,19 +6,20 @@ namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 final readonly class ListDiff implements Diff
 {
     /**
-     * @param array<array-key, mixed> $addedValues
-     * @param array<array-key, Diff> $changedValues
+     * @param array<array-key, mixed>         $addedValues
+     * @param array<array-key, Diff>          $changedValues
      * @param list<array-key|ConditionalDiff> $removedKeys
      */
     public function __construct(
         public array $addedValues = [],
         public array $changedValues = [],
         public array $removedKeys = [],
-    ) {}
+    ) {
+    }
 
     /**
-     * @param array<array-key, mixed> $addedValues
-     * @param array<array-key, Diff> $changedValues
+     * @param array<array-key, mixed>         $addedValues
+     * @param array<array-key, Diff>          $changedValues
      * @param list<array-key|ConditionalDiff> $removedKeys
      */
     public function with(

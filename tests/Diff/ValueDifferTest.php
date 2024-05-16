@@ -41,6 +41,7 @@ final class ValueDifferTest extends TestCase
         yield 'Same object value' => [new ValueDiff((object) ['foo' => 'bar']), (object) ['foo' => 'bar'], (object) ['foo' => 'bar']];
 
         $instance = (object) ['foo' => 'bar'];
+
         yield 'Same object instance' => [$emptyDiff, $instance, $instance];
     }
 }

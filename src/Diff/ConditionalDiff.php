@@ -10,7 +10,8 @@ use stdClass;
 final readonly class ConditionalDiff implements Diff
 {
     public function __construct(
-        public Type|ExpressionInterface|stdClass|array|bool|float|int|null|string $identifier,
+        public Type|ExpressionInterface|stdClass|array|bool|float|int|string|null $identifier,
         public ?Diff $diff = null,
-    ) {}
+    ) {
+    }
 }

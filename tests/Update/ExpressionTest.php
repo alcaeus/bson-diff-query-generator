@@ -2,8 +2,8 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Tests\Update;
 
-use Alcaeus\BsonDiffQueryGenerator\Update\Expression;
 use Alcaeus\BsonDiffQueryGenerator\Tests\FunctionalTestCase;
+use Alcaeus\BsonDiffQueryGenerator\Update\Expression;
 use Generator;
 use MongoDB\Builder\BuilderEncoder;
 use MongoDB\Builder\Expression as BaseExpression;
@@ -11,6 +11,7 @@ use MongoDB\Builder\Pipeline;
 use MongoDB\Builder\Stage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+
 use function array_shift;
 use function iterator_to_array;
 

@@ -3,6 +3,7 @@
 namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
 use function is_array;
+use function is_object;
 
 /** @internal */
 final class Differ implements DifferInterface

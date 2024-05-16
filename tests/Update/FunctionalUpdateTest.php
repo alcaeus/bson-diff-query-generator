@@ -9,12 +9,10 @@ use Generator;
 use MongoDB\Builder\BuilderEncoder;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
-use stdClass;
+
 use function array_shift;
 use function array_values;
 use function DeepCopy\deep_copy;
-use function is_iterable;
-use function is_object;
 use function iterator_to_array;
 
 #[CoversNothing]

@@ -2,11 +2,11 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Tests\Diff;
 
-use Alcaeus\BsonDiffQueryGenerator\Diff\ConditionalDiff;
-use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiffer;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ConditionalDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\Differ;
 use Alcaeus\BsonDiffQueryGenerator\Diff\EmptyDiff;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiffer;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
@@ -14,6 +14,7 @@ use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiffer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+
 use function DeepCopy\deep_copy;
 
 #[CoversClass(ArrayDiffer::class)]

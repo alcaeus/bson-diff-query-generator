@@ -6,7 +6,9 @@ use MongoDB\Client;
 use MongoDB\Collection;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+
 use function getenv;
+use function is_string;
 
 abstract class FunctionalTestCase extends TestCase
 {

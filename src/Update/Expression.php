@@ -3,6 +3,7 @@
 namespace Alcaeus\BsonDiffQueryGenerator\Update;
 
 use MongoDB\Builder\Expression as BaseExpression;
+
 use function MongoDB\object;
 
 /** @internal */

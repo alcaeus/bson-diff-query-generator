@@ -19,6 +19,7 @@ use MongoDB\Builder\Stage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+
 use function DeepCopy\deep_copy;
 use function MongoDB\object;
 
@@ -92,16 +93,12 @@ final class UpdateGeneratorTest extends TestCase
     public function testObjectWithList(): void
     {
         $list = [0, 1, 2, 3, 4, 5];
-        $old = [
-            'list' => $list,
-        ];
+        $old = ['list' => $list];
 
         unset($list[0], $list[3], $list[5]);
         $list[] = 6;
 
-        $new = [
-            'list' => $list,
-        ];
+        $new = ['list' => $list];
 
         $diff = $this->generateDiff($old, $new);
         self::assertInstanceOf(ObjectDiff::class, $diff);
@@ -119,7 +116,7 @@ final class UpdateGeneratorTest extends TestCase
                             ),
                         ),
                     ),
-                    [BaseExpression::literal(6)]
+                    [BaseExpression::literal(6)],
                 )),
             ),
             $this->generateUpdatePipeline($diff),
@@ -159,7 +156,7 @@ final class UpdateGeneratorTest extends TestCase
                                     ),
                                 ),
                             ),
-                            [BaseExpression::literal(6)]
+                            [BaseExpression::literal(6)],
                         ),
                     ],
                 )),
@@ -323,7 +320,7 @@ final class UpdateGeneratorTest extends TestCase
                                 BaseExpression::and(
                                     BaseExpression::ne(BaseExpression::variable('this.v._id'), 2),
                                 ),
-                            )
+                            ),
                         ),
                         [BaseExpression::literal((object) ['_id' => 3, 'foo' => 'qaz'])],
                     ),
@@ -338,11 +335,11 @@ final class UpdateGeneratorTest extends TestCase
         $diff = new ObjectDiff(changedValues: [
             'nested' => new ObjectDiff(changedValues: [
                 'list' => new ListDiff(changedValues: [
-                    0 => new ValueDiff(1)
+                    0 => new ValueDiff(1),
                 ]),
                 'document' => new ObjectDiff(changedValues: [
                     'list' => new ListDiff(changedValues: [
-                        0 => new ValueDiff(1)
+                        0 => new ValueDiff(1),
                     ]),
                 ]),
             ]),
@@ -369,8 +366,8 @@ final class UpdateGeneratorTest extends TestCase
                                         ),
                                     ],
                                     default: BaseExpression::variable('this'),
-                                )
-                            )
+                                ),
+                            ),
                         ),
                         'document' => BaseExpression::mergeObjects(
                             BaseExpression::fieldPath('nested.document'),
@@ -389,15 +386,15 @@ final class UpdateGeneratorTest extends TestCase
                                                 ),
                                             ],
                                             default: BaseExpression::variable('this'),
-                                        )
-                                    )
+                                        ),
+                                    ),
                                 ),
                             ],
                         ),
                     ],
                 ),
             ],
-            $update
+            $update,
         );
     }
 

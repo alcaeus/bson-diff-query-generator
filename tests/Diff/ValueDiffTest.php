@@ -6,6 +6,8 @@ use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+use function uniqid;
+
 #[CoversClass(ValueDiff::class)]
 final class ValueDiffTest extends TestCase
 {

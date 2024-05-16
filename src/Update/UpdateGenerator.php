@@ -14,12 +14,14 @@ use MongoDB\Builder\Pipeline;
 use MongoDB\Builder\Stage;
 use MongoDB\Builder\Type\ExpressionInterface;
 use stdClass;
+
 use function array_combine;
 use function array_fill;
 use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_values;
+use function count;
 use function MongoDB\object;
 
 final class UpdateGenerator
@@ -34,19 +36,19 @@ final class UpdateGenerator
     /** @return array<string, mixed> */
     public function generateUpdateObject(ObjectDiff $objectDiff, BaseExpression\FieldPath|BaseExpression\Variable|null $prefix = null): array
     {
-        $prefixKey = match(true) {
+        $prefixKey = match (true) {
             $prefix instanceof BaseExpression\FieldPath => $prefix->name . '.',
             $prefix instanceof BaseExpression\Variable => $prefix->name . '.',
             $prefix === null => '',
         };
 
         $getFieldValue = $prefix instanceof BaseExpression\Variable
-            ? fn (string $key): BaseExpression\Variable => BaseExpression::variable($prefixKey . $key)
-            : fn (string $key): BaseExpression\FieldPath => BaseExpression::fieldPath($prefixKey . $key);
+            ? static fn (string $key): BaseExpression\Variable => BaseExpression::variable($prefixKey . $key)
+            : static fn (string $key): BaseExpression\FieldPath => BaseExpression::fieldPath($prefixKey . $key);
 
         return array_merge(
             array_map(
-                fn (mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
+                static fn (mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
                 $objectDiff->addedValues,
             ),
             array_combine(
@@ -60,7 +62,7 @@ final class UpdateGenerator
                     array_keys($objectDiff->changedValues),
                     $objectDiff->changedValues,
                 ),
-            )
+            ),
         );
     }
 
@@ -96,7 +98,7 @@ final class UpdateGenerator
                     array_keys($changedValues),
                 ),
                 default: BaseExpression::variable('this'),
-            )
+            ),
         );
     }
 
@@ -105,10 +107,10 @@ final class UpdateGenerator
         if ($fieldDiff instanceof ConditionalDiff) {
             $comparisonKey = $fieldDiff;
             $diff = $fieldDiff->diff ?? throw new LogicException('Cannot generate update for empty diff');
-        } else {
-            $comparisonKey = $key;
-            $diff = $fieldDiff;
         }
+
+        $comparisonKey = $key;
+        $diff = $fieldDiff;
 
         return BaseExpression::case(
             case: $this->generateListItemMatchCondition($comparisonKey),
@@ -166,7 +168,7 @@ final class UpdateGenerator
         return BaseExpression::concatArrays(
             $input,
             array_map(
-                fn(mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
+                static fn (mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
                 array_values($addedValues),
             ),
         );
@@ -175,10 +177,8 @@ final class UpdateGenerator
     private function generateListItemMatchCondition(int|string|ConditionalDiff $value, bool $negate = false): BaseExpression\ResolvesToBool
     {
         $comparison = $negate
-            ? fn (BaseExpression\Variable $variable, Type|ExpressionInterface|stdClass|array|bool|float|int|null|string $value): BaseExpression\ResolvesToBool =>
-                BaseExpression::ne($variable, $value)
-            : fn (BaseExpression\Variable $variable, Type|ExpressionInterface|stdClass|array|bool|float|int|null|string $value): BaseExpression\ResolvesToBool =>
-                BaseExpression::eq($variable, $value);
+            ? static fn (BaseExpression\Variable $variable, Type|ExpressionInterface|stdClass|array|bool|float|int|string|null $value): BaseExpression\ResolvesToBool => BaseExpression::ne($variable, $value)
+            : static fn (BaseExpression\Variable $variable, Type|ExpressionInterface|stdClass|array|bool|float|int|string|null $value): BaseExpression\ResolvesToBool => BaseExpression::eq($variable, $value);
 
         return $value instanceof ConditionalDiff
             ? $comparison(BaseExpression::variable('this.v._id'), $value->identifier)

@@ -4,6 +4,7 @@ namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
 use function array_combine;
 use function array_diff_key;
+use function array_intersect;
 use function array_is_list;
 use function array_keys;
 use function array_map;
@@ -51,8 +52,7 @@ final class ArrayDiffer implements DifferInterface
             $changedValues = array_combine(
                 array_keys($changedValues),
                 array_map(
-                    fn (Diff $diff, int|string $changedKey): Diff =>
-                        is_int($changedKey) && is_object($old[$changedKey]) && isset($old[$changedKey]->_id)
+                    static fn (Diff $diff, int|string $changedKey): Diff => is_int($changedKey) && is_object($old[$changedKey]) && isset($old[$changedKey]->_id)
                             ? new ConditionalDiff($old[$changedKey]->_id, $diff)
                             : $diff,
                     $changedValues,
@@ -61,8 +61,7 @@ final class ArrayDiffer implements DifferInterface
             );
 
             $removedKeys = array_map(
-                fn (int|string $removedKey): int|string|ConditionalDiff =>
-                    is_int($removedKey) && is_object($old[$removedKey]) && isset($old[$removedKey]->_id)
+                static fn (int|string $removedKey): int|string|ConditionalDiff => is_int($removedKey) && is_object($old[$removedKey]) && isset($old[$removedKey]->_id)
                         ? new ConditionalDiff($old[$removedKey]->_id)
                         : $removedKey,
                 $removedKeys,
@@ -95,7 +94,7 @@ final class ArrayDiffer implements DifferInterface
     {
         $previousKey = null;
         foreach ($array as $key => $_) {
-            if (!is_int($key)) {
+            if (! is_int($key)) {
                 return false;
             }
 

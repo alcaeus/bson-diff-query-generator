@@ -7,19 +7,20 @@ final readonly class ObjectDiff implements Diff
 {
     /**
      * @param array<string, mixed> $addedValues
-     * @param array<string, Diff> $changedValues
-     * @param list<string> $removedFields
+     * @param array<string, Diff>  $changedValues
+     * @param list<string>         $removedFields
      */
     public function __construct(
         public array $addedValues = [],
         public array $changedValues = [],
         public array $removedFields = [],
-    ) {}
+    ) {
+    }
 
     /**
      * @param array<string, mixed> $addedValues
-     * @param array<string, Diff> $changedValues
-     * @param list<string> $removedFields
+     * @param array<string, Diff>  $changedValues
+     * @param list<string>         $removedFields
      */
     public function with(
         ?array $addedValues = null,

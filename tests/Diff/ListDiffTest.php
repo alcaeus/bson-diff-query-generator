@@ -2,8 +2,8 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Tests\Diff;
 
-use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\EmptyDiff;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
