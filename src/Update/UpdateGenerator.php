@@ -2,158 +2,186 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Update;
 
+use Alcaeus\BsonDiffQueryGenerator\Diff\ConditionalDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\Diff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
+use LogicException;
+use MongoDB\BSON\Type;
 use MongoDB\Builder\Expression as BaseExpression;
 use MongoDB\Builder\Pipeline;
 use MongoDB\Builder\Stage;
-use MongoDB\Builder\Stage\SetStage;
-use MongoDB\Builder\Type\StageInterface;
+use MongoDB\Builder\Type\ExpressionInterface;
+use stdClass;
+use function array_combine;
+use function array_fill;
 use function array_keys;
 use function array_map;
-use function array_reduce;
+use function array_merge;
 use function array_values;
-use function rsort;
+use function MongoDB\object;
 
 final class UpdateGenerator
 {
     public function generateUpdatePipeline(ObjectDiff $objectDiff): Pipeline
     {
-        $query = $this->generateQueryObject($objectDiff);
-
-        /** @var list<StageInterface|Pipeline> $stages */
-        $stages = [];
-
-        if ($query->lists !== []) {
-            $sortedLists = $query->lists;
-            sort($sortedLists);
-
-            $stages = array_merge(
-                $stages,
-                array_map(
-                    $this->convertListToObject(...),
-                    $sortedLists,
-                ),
-            );
-        }
-
-        if ($query->set !== []) {
-            $stages[] = Stage::set(...$query->set);
-        }
-
-        if ($query->unset !== []) {
-            $stages[] = Stage::unset(...$query->unset);
-        }
-
-        if ($query->lists !== []) {
-            $stages = array_merge(
-                $stages,
-                $this->pushNewElementsAndConvertList($query),
-            );
-        }
-
-        return new Pipeline(...$stages);
+        return new Pipeline(
+            Stage::set(...$this->generateUpdateObject($objectDiff)),
+        );
     }
 
-    private function generateQueryObject(ObjectDiff $objectDiff): Update
+    /** @return array<string, mixed> */
+    public function generateUpdateObject(ObjectDiff $objectDiff, BaseExpression\FieldPath|BaseExpression\Variable|null $prefix = null): array
     {
-        $query = new Update(
-            $objectDiff->addedValues,
-            $objectDiff->removedFields,
-        );
+        $prefixKey = match(true) {
+            $prefix instanceof BaseExpression\FieldPath => $prefix->name . '.',
+            $prefix instanceof BaseExpression\Variable => $prefix->name . '.',
+            $prefix === null => '',
+        };
 
-        return array_reduce(
-            array_keys($objectDiff->changedValues),
-            fn (Update $query, string $key) => $this->updateQueryForDiff(
-                $key,
-                $objectDiff->changedValues[$key],
-                $query,
+        $getFieldValue = $prefix instanceof BaseExpression\Variable
+            ? fn (string $key): BaseExpression\Variable => BaseExpression::variable($prefixKey . $key)
+            : fn (string $key): BaseExpression\FieldPath => BaseExpression::fieldPath($prefixKey . $key);
+
+        return array_merge(
+            array_map(
+                fn (mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
+                $objectDiff->addedValues,
             ),
-            $query,
+            array_combine(
+                $objectDiff->removedFields,
+                array_fill(0, count($objectDiff->removedFields), BaseExpression::variable('REMOVE')),
+            ),
+            array_combine(
+                array_keys($objectDiff->changedValues),
+                array_map(
+                    fn (string $key, Diff $diff) => $this->generateFieldExpression($getFieldValue($key), $diff),
+                    array_keys($objectDiff->changedValues),
+                    $objectDiff->changedValues,
+                ),
+            )
         );
     }
 
-    private function updateQueryForDiff(string $key, Diff $diff, Update $query): Update
+    private function generateListUpdate(BaseExpression\ResolvesToArray $input, ListDiff $diff): BaseExpression\ResolvesToArray
     {
-        return match ($diff::class) {
-            // Simple value: add to $set operator
-            ValueDiff::class => $query->combineWith(set: [$key => $diff->value]),
+        return $this->appendItemsToList(
+            Expression::extractValuesFromList(
+                $this->createRemovedListItemFilter(
+                    input: $this->generateListItemUpdates(
+                        input: Expression::wrapValuesWithKeys($input),
+                        changedValues: $diff->changedValues,
+                    ),
+                    removedKeys: $diff->removedKeys,
+                ),
+            ),
+            $diff->addedValues,
+        );
+    }
+
+    /** @param array<array-key, Diff> $changedValues */
+    private function generateListItemUpdates(BaseExpression\ResolvesToArray $input, array $changedValues): BaseExpression\ResolvesToArray
+    {
+        if ($changedValues === []) {
+            return $input;
+        }
+
+        return BaseExpression::map(
+            input: $input,
+            in: BaseExpression::switch(
+                array_map(
+                    $this->generateListItemUpdateBranch(...),
+                    array_values($changedValues),
+                    array_keys($changedValues),
+                ),
+                default: BaseExpression::variable('this'),
+            )
+        );
+    }
+
+    private function generateListItemUpdateBranch(Diff $fieldDiff, int|string $key): BaseExpression\CaseOperator
+    {
+        if ($fieldDiff instanceof ConditionalDiff) {
+            $comparisonKey = $fieldDiff;
+            $diff = $fieldDiff->diff ?? throw new LogicException('Cannot generate update for empty diff');
+        } else {
+            $comparisonKey = $key;
+            $diff = $fieldDiff;
+        }
+
+        return BaseExpression::case(
+            case: $this->generateListItemMatchCondition($comparisonKey),
+            then: BaseExpression::mergeObjects(
+                BaseExpression::variable('this'),
+                object(v: $this->generateFieldExpression(BaseExpression::variable('this.v'), $diff)),
+            ),
+        );
+    }
+
+    /** @param list<int|string|ConditionalDiff> $removedKeys */
+    private function createRemovedListItemFilter(BaseExpression\ResolvesToArray $input, array $removedKeys): BaseExpression\ResolvesToArray
+    {
+        if ($removedKeys === []) {
+            return $input;
+        }
+
+        return BaseExpression::filter(
+            $input,
+            BaseExpression::and(
+                ...array_map(
+                    fn (int|string|ConditionalDiff $value): BaseExpression\ResolvesToBool => $this->generateListItemMatchCondition($value, negate: true),
+                    $removedKeys,
+                ),
+            ),
+        );
+    }
+
+    private function generateFieldExpression(BaseExpression\FieldPath|BaseExpression\Variable $path, Diff $fieldDiff): BaseExpression\ResolvesToAny|BaseExpression\ResolvesToObject|BaseExpression\ResolvesToArray
+    {
+        return match ($fieldDiff::class) {
+            // Simple value: return wrapped in a $literal operator to prevent execution of dollars
+            ValueDiff::class => BaseExpression::literal($fieldDiff->value),
 
             // Object diff: apply with a prefix
-            ObjectDiff::class => $query->combineWithPrefixedQuery(
-                $this->generateQueryObject($diff),
-                $key,
+            ObjectDiff::class => BaseExpression::mergeObjects(
+                $path,
+                $this->generateUpdateObject($fieldDiff, $path),
             ),
 
-            ListDiff::class => $query->combineWithPrefixedQuery(
-                $this->generateListQueryObject($diff),
-                $key,
-                isList: true,
+            // List diff: use the $map operator to traverse the list and update elements
+            ListDiff::class => $this->generateListUpdate(
+                $path,
+                $fieldDiff,
             ),
         };
     }
 
-    private function generateListQueryObject(ListDiff $listDiff): Update
+    private function appendItemsToList(BaseExpression\ResolvesToArray $input, array $addedValues): BaseExpression\ResolvesToArray
     {
-        $query = new Update(
-            unset: $listDiff->removedKeys,
-            push: ['' => array_values($listDiff->addedValues)],
-        );
+        if ($addedValues === []) {
+            return $input;
+        }
 
-        return array_reduce(
-            array_keys($listDiff->changedValues),
-            fn (Update $query, int|string $index) => $this->updateQueryForDiff(
-                (string) $index,
-                $listDiff->changedValues[$index],
-                $query,
+        return BaseExpression::concatArrays(
+            $input,
+            array_map(
+                fn(mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
+                array_values($addedValues),
             ),
-            $query,
         );
     }
 
-    private function convertListToObject(string $key): SetStage
+    private function generateListItemMatchCondition(int|string|ConditionalDiff $value, bool $negate = false): BaseExpression\ResolvesToBool
     {
-        return Stage::set(...[$key => Expression::listToObject(BaseExpression::arrayFieldPath($key))]);
-    }
+        $comparison = $negate
+            ? fn (BaseExpression\Variable $variable, Type|ExpressionInterface|stdClass|array|bool|float|int|null|string $value): BaseExpression\ResolvesToBool =>
+                BaseExpression::ne($variable, $value)
+            : fn (BaseExpression\Variable $variable, Type|ExpressionInterface|stdClass|array|bool|float|int|null|string $value): BaseExpression\ResolvesToBool =>
+                BaseExpression::eq($variable, $value);
 
-    private function convertObjectToList(string $key): SetStage
-    {
-        return Stage::set(...[$key => Expression::objectToList(BaseExpression::objectFieldPath($key))]);
-    }
-
-    private function pushNewListElements(string $key, array $elements): SetStage
-    {
-        return Stage::set(
-            ...[$key => BaseExpression::concatArrays(
-                BaseExpression::arrayFieldPath($key),
-                $elements,
-            )],
-        );
-    }
-
-    /** @return list<SetStage|Pipeline> */
-    private function pushNewElementsAndConvertList(Update $query): array
-    {
-        $lists = $query->lists;
-
-        // Sort in reverse order - this will generally ensure that nested lists are handled first
-        rsort($lists);
-
-        return array_map(
-            function (string $list) use ($query): Pipeline|SetStage
-            {
-                if ($query->push[$list] !== []) {
-                    return new Pipeline(
-                        $this->convertObjectToList($list),
-                        $this->pushNewListElements($list, $query->push[$list]),
-                    );
-                }
-
-                return $this->convertObjectToList($list);
-            },
-            $lists,
-        );
+        return $value instanceof ConditionalDiff
+            ? $comparison(BaseExpression::variable('this.v._id'), $value->identifier)
+            : $comparison(BaseExpression::variable('this.k'), $value);
     }
 }

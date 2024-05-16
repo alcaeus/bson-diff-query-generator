@@ -2,23 +2,28 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Tests\Diff;
 
+use Alcaeus\BsonDiffQueryGenerator\Diff\ConditionalDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiffer;
 use Alcaeus\BsonDiffQueryGenerator\Diff\Differ;
 use Alcaeus\BsonDiffQueryGenerator\Diff\EmptyDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiff;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiffer;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiffer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use function DeepCopy\deep_copy;
 
 #[CoversClass(ArrayDiffer::class)]
+#[CoversClass(ConditionalDiff::class)]
+#[CoversClass(EmptyDiff::class)]
+#[CoversClass(ListDiff::class)]
+#[CoversClass(ObjectDiff::class)]
+#[CoversClass(ValueDiff::class)]
 #[UsesClass(Differ::class)]
-#[UsesClass(EmptyDiff::class)]
-#[UsesClass(ListDiff::class)]
-#[UsesClass(ObjectDiff::class)]
-#[UsesClass(ValueDiff::class)]
+#[UsesClass(ObjectDiffer::class)]
 #[UsesClass(ValueDiffer::class)]
 final class ArrayDifferTest extends TestCase
 {
@@ -217,5 +222,28 @@ final class ArrayDifferTest extends TestCase
 
         self::assertInstanceOf(ValueDiff::class, $diff);
         $this->assertSame($new, $diff->value);
+    }
+
+    public function testListOfEmbeddedDocumentsUsesFilter(): void
+    {
+        $old = [
+            (object) ['_id' => 1],
+            (object) ['_id' => 2],
+            (object) ['_id' => 3],
+        ];
+
+        /** @var list<object{_id: int}> $new */
+        $new = deep_copy($old);
+        unset($new[1]);
+        $new[2]->foo = 'bar';
+        $new[] = (object) ['_id' => 4];
+
+        $diff = (new ArrayDiffer())->getDiff($old, $new);
+
+        self::assertInstanceOf(ListDiff::class, $diff);
+
+        $this->assertEquals([3 => (object) ['_id' => 4]], $diff->addedValues);
+        $this->assertEquals([2 => new ConditionalDiff(3, new ObjectDiff(['foo' => 'bar']))], $diff->changedValues);
+        $this->assertEquals([new ConditionalDiff(2)], $diff->removedKeys);
     }
 }

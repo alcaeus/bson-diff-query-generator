@@ -2,9 +2,13 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
+use function array_combine;
 use function array_diff_key;
 use function array_is_list;
 use function array_keys;
+use function array_map;
+use function is_int;
+use function is_object;
 
 /** @internal */
 final class ArrayDiffer implements DifferInterface
@@ -40,7 +44,30 @@ final class ArrayDiffer implements DifferInterface
         }
 
         $addedValues = array_diff_key($new, $old);
-        $removedKeys = array_diff_key($old, $new);
+        $removedKeys = array_keys(array_diff_key($old, $new));
+
+        // If we're dealing with a list, convert any diffs to conditional diffs to avoid conflicts
+        if ($newCouldBeList) {
+            $changedValues = array_combine(
+                array_keys($changedValues),
+                array_map(
+                    fn (Diff $diff, int|string $changedKey): Diff =>
+                        is_int($changedKey) && is_object($old[$changedKey]) && isset($old[$changedKey]->_id)
+                            ? new ConditionalDiff($old[$changedKey]->_id, $diff)
+                            : $diff,
+                    $changedValues,
+                    array_keys($changedValues),
+                ),
+            );
+
+            $removedKeys = array_map(
+                fn (int|string $removedKey): int|string|ConditionalDiff =>
+                    is_int($removedKey) && is_object($old[$removedKey]) && isset($old[$removedKey]->_id)
+                        ? new ConditionalDiff($old[$removedKey]->_id)
+                        : $removedKey,
+                $removedKeys,
+            );
+        }
 
         // TODO: consider checking values in added and removed keys to determine
         // renamed keys
@@ -50,7 +77,7 @@ final class ArrayDiffer implements DifferInterface
         return new $className(
             $addedValues,
             $changedValues,
-            array_keys($removedKeys),
+            $removedKeys,
         );
     }
 

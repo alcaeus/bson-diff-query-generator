@@ -8,7 +8,7 @@ final readonly class ListDiff implements Diff
     /**
      * @param array<array-key, mixed> $addedValues
      * @param array<array-key, Diff> $changedValues
-     * @param list<array-key> $removedKeys
+     * @param list<array-key|ConditionalDiff> $removedKeys
      */
     public function __construct(
         public array $addedValues = [],
@@ -19,7 +19,7 @@ final readonly class ListDiff implements Diff
     /**
      * @param array<array-key, mixed> $addedValues
      * @param array<array-key, Diff> $changedValues
-     * @param list<array-key> $removedKeys
+     * @param list<array-key|ConditionalDiff> $removedKeys
      */
     public function with(
         ?array $addedValues = null,

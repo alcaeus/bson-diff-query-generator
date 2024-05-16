@@ -3,14 +3,15 @@
 namespace Alcaeus\BsonDiffQueryGenerator\Tests\Update;
 
 use Alcaeus\BsonDiffQueryGenerator\Diff\ArrayDiffer;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ConditionalDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\Diff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\Differ;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ListDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiff;
+use Alcaeus\BsonDiffQueryGenerator\Diff\ObjectDiffer;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiff;
 use Alcaeus\BsonDiffQueryGenerator\Diff\ValueDiffer;
 use Alcaeus\BsonDiffQueryGenerator\Update\Expression;
-use Alcaeus\BsonDiffQueryGenerator\Update\Update;
 use Alcaeus\BsonDiffQueryGenerator\Update\UpdateGenerator;
 use MongoDB\Builder\Expression as BaseExpression;
 use MongoDB\Builder\Pipeline;
@@ -18,14 +19,17 @@ use MongoDB\Builder\Stage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use function DeepCopy\deep_copy;
+use function MongoDB\object;
 
 #[CoversClass(UpdateGenerator::class)]
 #[UsesClass(ArrayDiffer::class)]
+#[UsesClass(ConditionalDiff::class)]
 #[UsesClass(Differ::class)]
 #[UsesClass(ListDiff::class)]
 #[UsesClass(Expression::class)]
-#[UsesClass(Update::class)]
 #[UsesClass(ObjectDiff::class)]
+#[UsesClass(ObjectDiffer::class)]
 #[UsesClass(ValueDiff::class)]
 #[UsesClass(ValueDiffer::class)]
 final class UpdateGeneratorTest extends TestCase
@@ -40,8 +44,11 @@ final class UpdateGeneratorTest extends TestCase
 
         self::assertEquals(
             new Pipeline(
-                Stage::set(foo: 'bar', bar: 'baz'),
-                Stage::unset('baz'),
+                Stage::set(
+                    foo: BaseExpression::literal('bar'),
+                    bar: BaseExpression::literal('baz'),
+                    baz: BaseExpression::variable('REMOVE'),
+                ),
             ),
             $this->generateUpdatePipeline($diff),
         );
@@ -64,13 +71,19 @@ final class UpdateGeneratorTest extends TestCase
 
         self::assertEquals(
             new Pipeline(
-                Stage::set(...[
-                    'foo' => (object) ['foo' => 'bar'],
-                    'bar' => 'baz',
-                    'nested.foo' => 'bar',
-                    'nested.bar' => 'baz',
-                ]),
-                Stage::unset('baz', 'nested.baz'),
+                Stage::set(
+                    foo: BaseExpression::literal((object) ['foo' => 'bar']),
+                    bar: BaseExpression::literal('baz'),
+                    nested: BaseExpression::mergeObjects(
+                        BaseExpression::fieldPath('nested'),
+                        [
+                            'foo' => BaseExpression::literal('bar'),
+                            'bar' => BaseExpression::literal('baz'),
+                            'baz' => BaseExpression::variable('REMOVE'),
+                        ],
+                    ),
+                    baz: BaseExpression::variable('REMOVE'),
+                ),
             ),
             $this->generateUpdatePipeline($diff),
         );
@@ -95,10 +108,19 @@ final class UpdateGeneratorTest extends TestCase
 
         self::assertEquals(
             new Pipeline(
-                Stage::set(list: Expression::listToObject(BaseExpression::arrayFieldPath('list'))),
-                Stage::unset('list.0', 'list.3', 'list.5'),
-                Stage::set(list: Expression::objectToList(BaseExpression::objectFieldPath('list'))),
-                Stage::set(list: BaseExpression::concatArrays(BaseExpression::arrayFieldPath('list'), [6])),
+                Stage::set(list: BaseExpression::concatArrays(
+                    Expression::extractValuesFromList(
+                        BaseExpression::filter(
+                            input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('list')),
+                            cond: BaseExpression::and(
+                                BaseExpression::ne(BaseExpression::variable('this.k'), 0),
+                                BaseExpression::ne(BaseExpression::variable('this.k'), 3),
+                                BaseExpression::ne(BaseExpression::variable('this.k'), 5),
+                            ),
+                        ),
+                    ),
+                    [BaseExpression::literal(6)]
+                )),
             ),
             $this->generateUpdatePipeline($diff),
         );
@@ -123,10 +145,24 @@ final class UpdateGeneratorTest extends TestCase
 
         self::assertEquals(
             new Pipeline(
-                Stage::set(...['nested.list' => Expression::listToObject(BaseExpression::arrayFieldPath('nested.list'))]),
-                Stage::unset('nested.list.0', 'nested.list.3', 'nested.list.5'),
-                Stage::set(...['nested.list' => Expression::objectToList(BaseExpression::objectFieldPath('nested.list'))]),
-                Stage::set(...['nested.list' => BaseExpression::concatArrays(BaseExpression::arrayFieldPath('nested.list'), [6])]),
+                Stage::set(nested: BaseExpression::mergeObjects(
+                    BaseExpression::fieldPath('nested'),
+                    [
+                        'list' => BaseExpression::concatArrays(
+                            Expression::extractValuesFromList(
+                                BaseExpression::filter(
+                                    input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('nested.list')),
+                                    cond: BaseExpression::and(
+                                        BaseExpression::ne(BaseExpression::variable('this.k'), 0),
+                                        BaseExpression::ne(BaseExpression::variable('this.k'), 3),
+                                        BaseExpression::ne(BaseExpression::variable('this.k'), 5),
+                                    ),
+                                ),
+                            ),
+                            [BaseExpression::literal(6)]
+                        ),
+                    ],
+                )),
             ),
             $this->generateUpdatePipeline($diff),
         );
@@ -154,18 +190,187 @@ final class UpdateGeneratorTest extends TestCase
 
         self::assertEquals(
             new Pipeline(
-                Stage::set(...['list' => Expression::listToObject(BaseExpression::arrayFieldPath('list'))]),
-                Stage::set(...['list.0' => Expression::listToObject(BaseExpression::arrayFieldPath('list.0'))]),
-                Stage::set(...['list.1' => Expression::listToObject(BaseExpression::arrayFieldPath('list.1'))]),
-                Stage::set(...['list.0.0' => 0, 'list.1.0' => -1]),
-                Stage::unset('list.0.1', 'list.1.2'),
-                Stage::set(...['list.1' => Expression::objectToList(BaseExpression::objectFieldPath('list.1'))]),
-                Stage::set(...['list.0' => Expression::objectToList(BaseExpression::objectFieldPath('list.0'))]),
-                Stage::set(...['list.0' => BaseExpression::concatArrays(BaseExpression::arrayFieldPath('list.0'), [5])]),
-                Stage::set(...['list' => Expression::objectToList(BaseExpression::objectFieldPath('list'))]),
-                Stage::set(...['list' => BaseExpression::concatArrays(BaseExpression::arrayFieldPath('list'), [[-2, -3]])]),
+                // $concatArrays is expected to append the new element (-2, -3)
+                Stage::set(list: BaseExpression::concatArrays(
+                    // Extract values from the update operation
+                    Expression::extractValuesFromList(
+                        // Actual update operation
+                        BaseExpression::map(
+                            // wrap values along with keys for identification
+                            input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('list')),
+                            // Main switch to update elements
+                            in: BaseExpression::switch(
+                                branches: [
+                                    BaseExpression::case(
+                                        // First element, update first element to 0, drop second element, append 5
+                                        case: BaseExpression::eq(BaseExpression::variable('this.k'), 0),
+                                        // $mergeObjects ensures we're working on this.v
+                                        then: BaseExpression::mergeObjects(
+                                            BaseExpression::variable('this'),
+                                            // $concatArrays appends 5
+                                            object(v: BaseExpression::concatArrays(
+                                                Expression::extractValuesFromList(
+                                                    // $filter removes item with key 1
+                                                    BaseExpression::filter(
+                                                        // $map to update element with key 0 to 0
+                                                        BaseExpression::map(
+                                                            input: Expression::wrapValuesWithKeys(BaseExpression::variable('this.v')),
+                                                            in: BaseExpression::switch(
+                                                                branches: [
+                                                                    BaseExpression::case(
+                                                                        case: BaseExpression::eq(BaseExpression::variable('this.k'), 0),
+                                                                        then: BaseExpression::mergeObjects(
+                                                                            BaseExpression::variable('this'),
+                                                                            object(v: BaseExpression::literal(0)),
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                                default: BaseExpression::variable('this'),
+                                                            ),
+                                                        ),
+                                                        BaseExpression::and(
+                                                            BaseExpression::ne(BaseExpression::variable('this.k'), 1),
+                                                        ),
+                                                    ),
+                                                ),
+                                                [BaseExpression::literal(5)],
+                                            )),
+                                        ),
+                                    ),
+                                    BaseExpression::case(
+                                        case: BaseExpression::eq(BaseExpression::variable('this.k'), 1),
+                                        then: BaseExpression::mergeObjects(
+                                            BaseExpression::variable('this'),
+                                            object(v: Expression::extractValuesFromList(
+                                                BaseExpression::filter(
+                                                    BaseExpression::map(
+                                                        input: Expression::wrapValuesWithKeys(BaseExpression::variable('this.v')),
+                                                        in: BaseExpression::switch(
+                                                            branches: [
+                                                                BaseExpression::case(
+                                                                    case: BaseExpression::eq(BaseExpression::variable('this.k'), 0),
+                                                                    then: BaseExpression::mergeObjects(
+                                                                        BaseExpression::variable('this'),
+                                                                        object(v: BaseExpression::literal(-1)),
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                            default: BaseExpression::variable('this'),
+                                                        ),
+                                                    ),
+                                                    BaseExpression::and(
+                                                        BaseExpression::ne(BaseExpression::variable('this.k'), 2),
+                                                    ),
+                                                ),
+                                            )),
+                                        ),
+                                    ),
+                                ],
+                                default: BaseExpression::variable('this'),
+                            ),
+                        ),
+                    ),
+                    [BaseExpression::literal([-2, -3])],
+                )),
             ),
             $this->generateUpdatePipeline($diff),
+        );
+    }
+
+    public function testObjectWithEmbeddedDocuments(): void
+    {
+        $old = (object) [
+            'list' => [
+                (object) ['_id' => 1, 'foo' => 'bar'],
+                (object) ['_id' => 2, 'foo' => 'baz'],
+            ],
+        ];
+
+        /** @var object{list: list<object{_id: int, foo: string}>} $new */
+        $new = deep_copy($old);
+
+        unset($new->list[1]);
+        $new->list[0]->foo = 'new_foo';
+        $new->list[] = (object) ['_id' => 3, 'foo' => 'qaz'];
+
+        $diff = $this->generateDiff($old, $new);
+        self::assertInstanceOf(ObjectDiff::class, $diff);
+
+        self::assertEquals(
+            new Pipeline(
+                Stage::set(
+                    list: BaseExpression::concatArrays(
+                        Expression::extractValuesFromList(
+                            BaseExpression::filter(
+                                BaseExpression::map(
+                                    Expression::wrapValuesWithKeys(BaseExpression::fieldPath('list')),
+                                    BaseExpression::switch(
+                                        branches: [
+                                            BaseExpression::case(
+                                                case: BaseExpression::eq(BaseExpression::variable('this.v._id'), 1),
+                                                then: BaseExpression::mergeObjects(
+                                                    BaseExpression::variable('this'),
+                                                    object(v: BaseExpression::mergeObjects(
+                                                        BaseExpression::variable('this.v'),
+                                                        ['foo' => BaseExpression::literal('new_foo')],
+                                                    )),
+                                                ),
+                                            ),
+                                        ],
+                                        default: BaseExpression::variable('this'),
+                                    ),
+                                ),
+                                BaseExpression::and(
+                                    BaseExpression::ne(BaseExpression::variable('this.v._id'), 2),
+                                ),
+                            )
+                        ),
+                        [BaseExpression::literal((object) ['_id' => 3, 'foo' => 'qaz'])],
+                    ),
+                ),
+            ),
+            $this->generateUpdatePipeline($diff),
+        );
+    }
+
+    public function testGenerateUpdateObjectForEmbeddedDocument(): void
+    {
+        $diff = new ObjectDiff(
+            changedValues: ['document' => new ObjectDiff(
+                changedValues: ['list' => new ListDiff(
+                    changedValues: [0 => new ValueDiff(1)],
+                )],
+            )],
+        );
+
+        $update = (new UpdateGenerator())->generateUpdateObject($diff);
+
+        self::assertEquals(
+            [
+                'document' => BaseExpression::mergeObjects(
+                    BaseExpression::fieldPath('document'),
+                    [
+                        'list' => Expression::extractValuesFromList(
+                            BaseExpression::map(
+                                input: Expression::wrapValuesWithKeys(BaseExpression::fieldPath('document.list')),
+                                in: BaseExpression::switch(
+                                    branches: [
+                                        BaseExpression::case(
+                                            case: BaseExpression::eq(BaseExpression::variable('this.k'), 0),
+                                            then: BaseExpression::mergeObjects(
+                                                BaseExpression::variable('this'),
+                                                object(v: BaseExpression::literal(1)),
+                                            ),
+                                        ),
+                                    ],
+                                    default: BaseExpression::variable('this'),
+                                )
+                            )
+                        ),
+                    ],
+                ),
+            ],
+            $update
         );
     }
 

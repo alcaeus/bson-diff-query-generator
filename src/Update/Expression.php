@@ -9,48 +9,30 @@ use function MongoDB\object;
 final class Expression
 {
     /**
-     * Generates an expression to turn the given array into an object.
-     *
-     * The resulting object contains numbered keys for each array element
-     *
-     * @param BaseExpression\ResolvesToArray $array
-     * @return BaseExpression\ResolvesToObject
+     * Extracts the previously nested value from a list
      */
-    public static function listToObject(BaseExpression\ResolvesToArray $array): BaseExpression\ResolvesToObject
+    public static function extractValuesFromList(BaseExpression\ResolvesToArray $input): BaseExpression\MapOperator
     {
-        return BaseExpression::arrayToObject(
-            // Generate a list of objects { k: <index>, v: <element> }
-            BaseExpression::map(
-                // Generate a list of arrays: [{ k: <index> }, { v: <element} }]
-                input: BaseExpression::zip(
-                    inputs: [
-                        self::generateKeyObjectList($array),
-                        self::generateValueObjectList($array),
-                    ],
-                ),
-                in: BaseExpression::mergeObjects(BaseExpression::variable('this')),
-            ),
+        return BaseExpression::map(
+            input: $input,
+            in: BaseExpression::variable('this.v'),
         );
     }
 
-    public static function objectToList(BaseExpression\ResolvesToObject $object): BaseExpression\ResolvesToArray
+    /**
+     * For a given list, generates objects in the form { k: <index>, v: <value> } for each element in the list
+     */
+    public static function wrapValuesWithKeys(BaseExpression\ResolvesToArray $array): BaseExpression\MapOperator
     {
-        // Extract only the value from the list of key/value objects
         return BaseExpression::map(
-            // Sort arrays by their key value, as we can't rely on key order in objects
-            input: BaseExpression::sortArray(
-                // Convert the keys to integers to ensure proper sort order
-                input: BaseExpression::map(
-                    // Convert an object to an array containing { k: <key>, v: <value> } objects
-                    input: BaseExpression::objectToArray($object),
-                    in: object(
-                        k: BaseExpression::toInt(BaseExpression::variable('this.k')),
-                        v: BaseExpression::variable('this.v'),
-                    ),
-                ),
-                sortBy: object(k: 1)
+        // Generate a list of arrays: [{ k: <index> }, { v: <element} }]
+            input: BaseExpression::zip(
+                inputs: [
+                    self::generateKeyObjectList($array),
+                    self::generateValueObjectList($array),
+                ],
             ),
-            in: BaseExpression::variable('this.v'),
+            in: BaseExpression::mergeObjects(BaseExpression::variable('this')),
         );
     }
 
@@ -73,8 +55,7 @@ final class Expression
     {
         return BaseExpression::map(
             input: self::getListKeyRange($array),
-            // The key for $arrayToObject must be a string
-            in: object(k: BaseExpression::toString(BaseExpression::variable('this'))),
+            in: object(k: BaseExpression::variable('this')),
         );
     }
 
