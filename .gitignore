@@ -1,8 +1,11 @@
+# Composer
 /vendor/
 /composer.lock
 
-/phpunit.xml
-/.phpunit.cache
+# Various caches
+/.cache
 
+# Machine-specific configuration files
+/phpunit.xml
 /phpcs.xml
-/.phpcs.cache
+/psalm.xml
