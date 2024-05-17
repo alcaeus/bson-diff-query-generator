@@ -116,4 +116,42 @@ final class ObjectDifferTest extends TestCase
         self::assertInstanceOf(ObjectDiff::class, $diff);
         $this->assertSame(['foo'], $diff->removedFields);
     }
+
+    public function testObjectWithListLikeKeys(): void
+    {
+        $old = (object) ['foo', 'bar'];
+        $new = (object) ['foo', 'bar', 'baz'];
+
+        $this->assertEquals(
+            new ObjectDiff(['2' => 'baz']),
+            (new ObjectDiffer())->getDiff($old, $new),
+        );
+    }
+
+    public function testObjectWithPrivateVariable(): void
+    {
+        $old = new class ('foo', 'bar') {
+            public function __construct(
+                public string $foo,
+                private string $bar,
+            ) {
+            }
+
+            public function with(string $foo, string $bar): self
+            {
+                $clone = clone $this;
+                $clone->foo = $foo;
+                $clone->bar = $bar;
+
+                return $clone;
+            }
+        };
+
+        $new = $old->with('bar', 'baz');
+
+        $this->assertEquals(
+            new ObjectDiff(changedValues: ['foo' => new ValueDiff('bar')]),
+            (new ObjectDiffer())->getDiff($old, $new),
+        );
+    }
 }

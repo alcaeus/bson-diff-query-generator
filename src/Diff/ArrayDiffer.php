@@ -14,7 +14,7 @@ use function is_object;
 /** @internal */
 final class ArrayDiffer implements DifferInterface
 {
-    public function getDiff(?array $old, ?array $new): EmptyDiff|ValueDiff|ListDiff|ObjectDiff
+    public function getDiff(?array $old, ?array $new, bool $forceObjectDiff = false): EmptyDiff|ValueDiff|ListDiff|ObjectDiff
     {
         if ($old === $new) {
             return new EmptyDiff();
@@ -73,7 +73,7 @@ final class ArrayDiffer implements DifferInterface
         // TODO: consider checking values in added and removed keys to determine
         // renamed keys
 
-        $className = $newCouldBeList ? ListDiff::class : ObjectDiff::class;
+        $className = $newCouldBeList && ! $forceObjectDiff ? ListDiff::class : ObjectDiff::class;
 
         return new $className(
             $addedValues,

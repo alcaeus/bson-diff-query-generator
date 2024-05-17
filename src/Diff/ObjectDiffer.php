@@ -2,6 +2,8 @@
 
 namespace Alcaeus\BsonDiffQueryGenerator\Diff;
 
+use function get_object_vars;
+
 /** @internal */
 final class ObjectDiffer implements DifferInterface
 {
@@ -18,7 +20,10 @@ final class ObjectDiffer implements DifferInterface
             return new ValueDiff($new);
         }
 
-        // TODO: This will convert any object with sequential numeric 0-based keys to a list
-        return $this->arrayDiffer->getDiff((array) $old, (array) $new);
+        return $this->arrayDiffer->getDiff(
+            get_object_vars($old),
+            get_object_vars($new),
+            forceObjectDiff: true,
+        );
     }
 }
