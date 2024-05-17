@@ -16,10 +16,12 @@ final class ArrayDiffer implements DifferInterface
 {
     public function getDiff(?array $old, ?array $new, bool $forceObjectDiff = false): EmptyDiff|ValueDiff|ListDiff|ObjectDiff
     {
+        // Identical arrays: no diff
         if ($old === $new) {
             return new EmptyDiff();
         }
 
+        // If either value is not an array, use a ValueDiff as we can't apply updates
         if ($old === null || $new === null) {
             return new ValueDiff($new);
         }
@@ -27,12 +29,13 @@ final class ArrayDiffer implements DifferInterface
         $oldIsList = array_is_list($old);
         $newCouldBeList = $this->couldBeList($new);
 
+        // If an array changed from a list to a non-list (or vice-versa), overwrite the value as the BSON type would
+        // change
         if ($oldIsList xor $newCouldBeList) {
-            // If an array changed from a list to a non-list (or vice-versa), overwrite the value as the BSON type would
-            // change
             return new ValueDiff($new);
         }
 
+        // For common keys, recursively diff all values and store the non-empty diffs
         $changedValues = [];
         $differ = new Differ();
         foreach ($this->getCommonKeys($old, $new) as $key) {
@@ -47,7 +50,8 @@ final class ArrayDiffer implements DifferInterface
         $addedValues = array_diff_key($new, $old);
         $removedKeys = array_keys(array_diff_key($old, $new));
 
-        // If we're dealing with a list, convert any diffs to conditional diffs to avoid conflicts
+        // If we're dealing with a list, convert any diffs to conditional diffs.
+        // Conditional diffs can be used when a list element is an object with an _id field.
         if ($newCouldBeList) {
             $changedValues = array_combine(
                 array_keys($changedValues),

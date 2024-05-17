@@ -34,7 +34,14 @@ final class UpdateGenerator
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Generates an update object for a single ObjectDiff
+     *
+     * The update object is meant to be used directly in a $set pipeline stage, or as an expression to update a nested
+     * document by supplying a prefix
+     *
+     * @return array<string, mixed>
+     */
     private static function generateUpdateObject(ObjectDiff $objectDiff, BaseExpression\FieldPath|BaseExpression\Variable|null $prefix = null): array
     {
         $prefixKey = match (true) {
@@ -48,15 +55,19 @@ final class UpdateGenerator
             : static fn (string $key): BaseExpression\FieldPath => BaseExpression::fieldPath($prefixKey . $key);
 
         return array_merge(
+            // Added values can be set directly, wrapped in a $literal operator
             array_map(
                 /** @psalm-suppress MixedArgument */
                 static fn (mixed $value): BaseExpression\LiteralOperator => BaseExpression::literal($value),
                 $objectDiff->addedValues,
             ),
+            // Removed fields can be unset by leveraging the $$REMOVE variable, avoiding the need for a separate
+            // $unset pipeline stage
             array_combine(
                 $objectDiff->removedFields,
                 array_fill(0, count($objectDiff->removedFields), BaseExpression::variable('REMOVE')),
             ),
+            // For changed values, generate field expressions for each field diff
             array_combine(
                 array_keys($objectDiff->changedValues),
                 array_map(
@@ -68,6 +79,16 @@ final class UpdateGenerator
         );
     }
 
+    /**
+     * Generates an update expression for a ListDiff
+     *
+     * The process is as follows:
+     * 1. Create an intermediate list of key/value objects
+     * 2. Use $map to apply changes for each list element
+     * 3. Use $filter to filter out removed elements
+     * 4. Unwrap intermediate list back to the original format
+     * 5. Use $concatArrays to append new items
+     */
     private static function generateListUpdate(BaseExpression\ResolvesToArray $input, ListDiff $diff): BaseExpression\ResolvesToArray
     {
         return Expression::appendItemsToList(
@@ -84,7 +105,13 @@ final class UpdateGenerator
         );
     }
 
-    /** @param array<array-key, Diff> $changedValues */
+    /**
+     * Generates a $map expression to apply updates to list items
+     *
+     * The in portion of $map consists of a $switch statement with a branch for each item that needs updating.
+     *
+     * @param array<array-key, Diff> $changedValues
+     */
     private static function generateListItemUpdates(BaseExpression\ResolvesToArray $input, array $changedValues): BaseExpression\ResolvesToArray
     {
         if ($changedValues === []) {
@@ -104,6 +131,9 @@ final class UpdateGenerator
         );
     }
 
+    /**
+     * Generates a single branch for an item update inside the $switch expression
+     */
     private static function generateListItemUpdateBranch(Diff $fieldDiff, int|string $key): BaseExpression\CaseOperator
     {
         $comparisonKey = $key;
@@ -123,7 +153,11 @@ final class UpdateGenerator
         );
     }
 
-    /** @param list<int|string|ConditionalDiff> $removedKeys */
+    /**
+     * Returns a $filter expression to filter out removed items
+     *
+     * @param list<int|string|ConditionalDiff> $removedKeys
+     */
     private static function createRemovedListItemFilter(BaseExpression\ResolvesToArray $input, array $removedKeys): BaseExpression\ResolvesToArray
     {
         if ($removedKeys === []) {
@@ -141,20 +175,25 @@ final class UpdateGenerator
         );
     }
 
+    /**
+     * Generates an expression to update a field value based on a given diff
+     */
     private static function generateFieldExpression(BaseExpression\FieldPath|BaseExpression\Variable $path, Diff $fieldDiff): BaseExpression\ResolvesToAny|BaseExpression\ResolvesToObject|BaseExpression\ResolvesToArray
     {
         /** @psalm-suppress MixedArgument */
         return match ($fieldDiff::class) {
-            // Simple value: return wrapped in a $literal operator to prevent execution of dollars
+            // ValueDiff: return new value wrapped in a $literal operator to prevent execution of pipeline operators
             ValueDiff::class => BaseExpression::literal($fieldDiff->value),
 
-            // Object diff: apply with a prefix
+            /* ObjectDiff: use $mergeObjects to merge the original object value with the update object for the diff
+             * The field names in the generated update object are prefixed with the field path to support embedded
+             * documents. */
             ObjectDiff::class => BaseExpression::mergeObjects(
                 $path,
                 self::generateUpdateObject($fieldDiff, $path),
             ),
 
-            // List diff: use the $map operator to traverse the list and update elements
+            // ListDiff: generate list updates based on the current field path
             ListDiff::class => self::generateListUpdate(
                 $path,
                 $fieldDiff,
@@ -162,6 +201,13 @@ final class UpdateGenerator
         };
     }
 
+    /**
+     * Generates a match condition for a list item
+     *
+     * For ConditionalDiff values, creates a comparison based on the _id field of the value. For other values, it
+     * assumes them to be the key. The negate parameter is used to receive a $ne condition to be used for filtering
+     * out removed items.
+     */
     private static function generateListItemMatchCondition(int|string|ConditionalDiff $value, bool $negate = false): BaseExpression\ResolvesToBool
     {
         $comparison = $negate

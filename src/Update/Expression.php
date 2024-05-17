@@ -13,6 +13,9 @@ final class Expression
 {
     /**
      * Extracts the previously nested value from a list
+     *
+     * For a list consisting of {k: <index>, v: <value>} objects, returns only the value.
+     * This is used to undo changes made by {@see self::wrapValuesWithKeys()}.
      */
     public static function extractValuesFromList(BaseExpression\ResolvesToArray $input): BaseExpression\MapOperator
     {
@@ -23,22 +26,33 @@ final class Expression
     }
 
     /**
-     * For a given list, generates objects in the form { k: <index>, v: <value> } for each element in the list
+     * Generates key/value objects for all elements in a list
+     *
+     * For a list of values, it generates objects in the form {k: <index>, v: <value>}, with <index> being the position
+     * of the item in the list, and <value> being the value.
+     * Can be undone using {@see self::extractValuesFromList()}
      */
     public static function wrapValuesWithKeys(BaseExpression\ResolvesToArray $array): BaseExpression\MapOperator
     {
         return BaseExpression::map(
-        // Generate a list of arrays: [{ k: <index> }, { v: <element} }]
+            // Generate a list of arrays: [{ k: <index> }, { v: <element} }]
             input: BaseExpression::zip(
                 inputs: [
                     self::generateKeyObjectList($array),
                     self::generateValueObjectList($array),
                 ],
             ),
+            // Combines the two objects in each item into a single object
             in: BaseExpression::mergeObjects(BaseExpression::variable('this')),
         );
     }
 
+    /**
+     * Appends new items to a list
+     *
+     * New values are wrapped in a $literal operator to avoid running any pipeline operators
+     * If no items are given, returns the original input without decoration.
+     */
     public static function appendItemsToList(BaseExpression\ResolvesToArray $input, array $items): BaseExpression\ResolvesToArray
     {
         if ($items === []) {
@@ -56,7 +70,7 @@ final class Expression
     }
 
     /**
-     * For a given list, returns an array containing the indexes for the list
+     * Generates a list of 0-based indexes based on the size of the original list
      */
     private static function getListKeyRange(BaseExpression\ResolvesToArray $array): BaseExpression\ResolvesToArray
     {
@@ -68,7 +82,7 @@ final class Expression
     }
 
     /**
-     * For a given list, generates objects in the form { k: <value> } to be used in the $arrayToObject operator
+     * For a given list, generates objects in the form {k: <value>}
      */
     private static function generateKeyObjectList(BaseExpression\ResolvesToArray $array): BaseExpression\MapOperator
     {
@@ -79,7 +93,7 @@ final class Expression
     }
 
     /**
-     * For a given list, generates objects in the form { v: <value> } to be used in the $arrayToObject operator
+     * For a given list, generates objects in the form {v: <value>}
      */
     private static function generateValueObjectList(BaseExpression\ResolvesToArray $array): BaseExpression\MapOperator
     {
