@@ -114,4 +114,23 @@ final class ExpressionTest extends FunctionalTestCase
             array_shift($result),
         );
     }
+
+    public function testAppendItemsToList(): void
+    {
+        self::assertEquals(
+            BaseExpression::concatArrays(
+                BaseExpression::fieldPath('list'),
+                [BaseExpression::literal(1)],
+            ),
+            Expression::appendItemsToList(BaseExpression::fieldPath('list'), [1]),
+        );
+    }
+
+    public function testAppendZeroItemsToList(): void
+    {
+        self::assertEquals(
+            BaseExpression::fieldPath('list'),
+            Expression::appendItemsToList(BaseExpression::fieldPath('list'), []),
+        );
+    }
 }
